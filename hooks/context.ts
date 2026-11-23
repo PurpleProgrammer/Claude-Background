@@ -3,6 +3,7 @@
 // "/backdrop region" taking the place of the setting.
 
 import { readEnvironment, resolveRegion, type Environment, type Resolved } from './detect.js'
+import type { OccasionContext } from './occasions.js'
 import { SETTINGS } from './settings.js'
 
 let current: Resolved | undefined
@@ -32,4 +33,10 @@ export function chooseRegion(choice: string | undefined, env: Environment = read
   regionOverride = choice === undefined || choice.toLowerCase() === 'auto' ? undefined : choice.toUpperCase()
   current = compute(env)
   return current
+}
+
+/** What decides which occasions apply, from the resolved region and the settings. */
+export function occasionContext(): OccasionContext {
+  const r = region()
+  return { region: r.region, subdivision: r.subdivision, hemisphere: r.hemisphere, enabled: SETTINGS.occasions, extra: SETTINGS.extraOccasions }
 }

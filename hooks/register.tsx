@@ -1,10 +1,11 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
-import { region } from './context.js'
+import { occasionContext, region } from './context.js'
 import { t } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
-import { buildScene, occasionStart, yearState, type DateParts, type Mood } from './scene.js'
+import { nextOccasionStart } from './occasions.js'
+import { buildScene, yearState, type DateParts, type Mood } from './scene.js'
 import { SETTINGS, type FallingMode, type Weather } from './settings.js'
 
 const SCENE = 'winter'
@@ -164,11 +165,8 @@ const PREVIEW_OCCASIONS: Record<string, Occasion> = {}
 
 /** The next time an occasion comes round, counted from today. */
 function next(o: Occasion): (y: number) => DateParts {
-  return y => {
-    const now = Date.UTC(today.y, today.m - 1, today.d)
-    const thisYear = occasionStart(o, y)
-    return Date.UTC(thisYear.y, thisYear.m - 1, thisYear.d) >= now ? thisYear : occasionStart(o, y + 1)
-  }
+  // The next time it comes round from today; a year ahead when it has no date soon.
+  return y => nextOccasionStart(o, today, occasionContext()) ?? { y: y + 1, m: 1, d: 1 }
 }
 function occasionAlias(words: string[], o: Occasion): void {
   alias(words, next(o))

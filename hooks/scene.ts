@@ -1,10 +1,11 @@
 import { t, type Occasion, type Season } from './i18n.js'
-import { region } from './context.js'
+import { occasionContext } from './context.js'
+import { dayNumber, occasionDef, occasionOn, type DateParts } from './occasions.js'
 import { SETTINGS, type Weather } from './settings.js'
 
 const CFG = SETTINGS
 
-export type DateParts = { y: number; m: number; d: number }
+export type { DateParts }
 
 export type Mood = 'cheer' | 'fright'
 
@@ -54,9 +55,6 @@ function mix(a: string, b: string, t: number): string {
   return '#' + out.map(v => v.toString(16).padStart(2, '0')).join('')
 }
 
-function dayNumber(y: number, m: number, d: number): number {
-  return Math.floor(Date.UTC(y, m - 1, d) / 86400000)
-}
 
 /** 0 before `from`, 1 after `to`, in between a straight ramp. Dates as [month, day] in year y. */
 function ramp(date: DateParts, from: [number, number], to: [number, number]): number {
@@ -69,23 +67,6 @@ function ramp(date: DateParts, from: [number, number], to: [number, number]): nu
   return clamp((now - a) / (b - a))
 }
 
-export function easterSunday(y: number): DateParts {
-  const a = y % 19
-  const b = Math.floor(y / 100)
-  const c = y % 100
-  const d = Math.floor(b / 4)
-  const e = b % 4
-  const f = Math.floor((b + 8) / 25)
-  const g = Math.floor((b - f + 1) / 3)
-  const h = (19 * a + b - d - g + 15) % 30
-  const i = Math.floor(c / 4)
-  const k = c % 4
-  const l = (32 + 2 * e + 2 * i - h - k) % 7
-  const m = Math.floor((a + 11 * h + 22 * l) / 451)
-  const month = Math.floor((h + l - 7 * m + 114) / 31)
-  const day = ((h + l - 7 * m + 114) % 31) + 1
-  return { y, m: month, d: day }
-}
 
 // ── the year: seasons and occasions ───────────────────────────────────────
 
@@ -154,126 +135,7 @@ export function yearState(date: DateParts, forced?: Occasion): YearState {
     fall.fluff = 1
   }
 
-  return { snow, autumn, build, melt, figure, season, occasion: forced ?? occasionOn(date), fall }
-}
-
-function fromDayNumber(n: number): DateParts {
-  const t = new Date(n * 86400000)
-  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }
-}
-
-/** The day number of the nth given weekday (0 = Sunday) of a month. */
-function nthWeekday(y: number, m: number, weekday: number, n: number): number {
-  const first = dayNumber(y, m, 1)
-  const firstWeekday = new Date(first * 86400000).getUTCDay()
-  return first + ((weekday - firstWeekday + 7) % 7) + (n - 1) * 7
-}
-
-/** First and last day of carnival in the year, by the town in the settings (Easter-relative). */
-function carnivalDays(y: number): [number, number] {
-  const e = easterSunday(y)
-  const easter = dayNumber(e.y, e.m, e.d)
-  if (region().subdivision === 'CH-BS') {
-    return [easter - 41, easter - 39] // Monday to Wednesday after Ash Wednesday
-  }
-  if (region().subdivision === 'CH-BE') {
-    return [easter - 43, easter - 41] // Thursday to Saturday after Ash Wednesday
-  }
-  return [easter - 52, easter - 47] // Schmutziger Donnerstag to Güdisdienstag
-}
-
-/** Zurich's spring festival: the third Monday in April, a week later when that is Easter Monday. */
-function sechselaeutenDay(y: number): number {
-  const e = easterSunday(y)
-  const third = nthWeekday(y, 4, 1, 3)
-  return third === dayNumber(e.y, e.m, e.d) + 1 ? third + 7 : third
-}
-
-/** The first day of each occasion in a year, for previews. */
-export function occasionStart(o: Occasion, y: number): DateParts {
-  const e = easterSunday(y)
-  const easter = dayNumber(e.y, e.m, e.d)
-  const days: Record<Occasion, number> = {
-    valentinesDay: dayNumber(y, 2, 14),
-    carnival: carnivalDays(y)[0],
-    womensDay: dayNumber(y, 3, 8),
-    easter,
-    sechselaeuten: sechselaeutenDay(y),
-    labourDay: dayNumber(y, 5, 1),
-    mothersDay: nthWeekday(y, 5, 0, 2),
-    ascension: easter + 39,
-    pentecost: easter + 49,
-    solstice: dayNumber(y, 6, 21),
-    swissNationalDay: dayNumber(y, 8, 1),
-    halloween: dayNumber(y, 10, 31),
-    stNicholas: dayNumber(y, 12, 6),
-    advent: dayNumber(y, 12, 1),
-    christmas: dayNumber(y, 12, 24),
-    newYearsEve: dayNumber(y, 12, 31),
-    newYear: dayNumber(y, 1, 1),
-  }
-  return fromDayNumber(days[o])
-}
-
-export function occasionOn(date: DateParts): Occasion | undefined {
-  const on = CFG.occasions
-  const { y, m, d } = date
-  const today = dayNumber(y, m, d)
-  const e = easterSunday(y)
-  const easter = dayNumber(e.y, e.m, e.d)
-  const [carnivalFrom, carnivalTo] = carnivalDays(y)
-  if (on.carnival && today >= carnivalFrom && today <= carnivalTo) {
-    return 'carnival'
-  }
-  if (on.easter && today >= easter - 2 && today <= easter + 1) {
-    return 'easter'
-  }
-  if (on.ascension && today === easter + 39) {
-    return 'ascension'
-  }
-  if (on.pentecost && today >= easter + 49 && today <= easter + 50) {
-    return 'pentecost'
-  }
-  if (on.valentinesDay && m === 2 && d === 14) {
-    return 'valentinesDay'
-  }
-  if (on.womensDay && m === 3 && d === 8) {
-    return 'womensDay'
-  }
-  if (on.sechselaeuten && region().subdivision === 'CH-ZH' && today === sechselaeutenDay(y)) {
-    return 'sechselaeuten'
-  }
-  if (on.labourDay && m === 5 && d === 1) {
-    return 'labourDay'
-  }
-  if (on.mothersDay && today === nthWeekday(y, 5, 0, 2)) {
-    return 'mothersDay'
-  }
-  if (on.solstice && m === 6 && d === 21) {
-    return 'solstice'
-  }
-  if (on.halloween && m === 10 && d >= 30) {
-    return 'halloween'
-  }
-  if (on.swissNationalDay && ((m === 7 && d === 31) || (m === 8 && d === 1))) {
-    return 'swissNationalDay'
-  }
-  if (on.stNicholas && m === 12 && d === 6) {
-    return 'stNicholas'
-  }
-  if (on.newYear && m === 12 && d === 31) {
-    return 'newYearsEve'
-  }
-  if (on.newYear && m === 1 && d === 1) {
-    return 'newYear'
-  }
-  if (on.christmas && m === 12 && d >= 24 && d <= 26) {
-    return 'christmas'
-  }
-  if (on.advent && m === 12 && d < 24) {
-    return 'advent'
-  }
-  return undefined
+  return { snow, autumn, build, melt, figure, season, occasion: forced ?? occasionOn(date, occasionContext()), fall }
 }
 
 // ── colours ───────────────────────────────────────────────────────────────
@@ -514,32 +376,22 @@ function moodMarks(mood: Mood | undefined, top: number): string {
 type Costume = { hat?: string; hand?: string; face?: string }
 
 function costumeFor(occasion: Occasion | undefined): Costume {
-  if (!CFG.costumes || occasion === undefined) {
-    return {}
-  }
-  switch (occasion) {
-    case 'halloween':
-      return { hat: 'witch' }
-    case 'christmas':
-      return { hat: 'santa' }
-    case 'stNicholas':
+  const key = occasion !== undefined && CFG.costumes ? occasionDef(occasion)?.costume : undefined
+  switch (key) {
+    case 'witch':
+    case 'santa':
+    case 'bunny':
+    case 'party':
+    case 'jester':
+      return { hat: key }
+    case 'mitre':
       return { hat: 'mitre', face: 'beard' }
-    case 'easter':
-      return { hat: 'bunny' }
-    case 'newYearsEve':
-    case 'newYear':
-      return { hat: 'party' }
-    case 'carnival':
-      return { hat: 'jester' }
-    case 'swissNationalDay':
-      return { hand: 'flag' }
-    case 'valentinesDay':
-      return { hand: 'rose' }
-    case 'mothersDay':
-      return { hand: 'bouquet' }
-    case 'womensDay':
-      return { hand: 'mimosa' }
-    case 'solstice':
+    case 'flag':
+    case 'rose':
+    case 'bouquet':
+    case 'mimosa':
+      return { hand: key }
+    case 'sunglasses':
       return { face: 'sunglasses' }
     default:
       return {}
