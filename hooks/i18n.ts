@@ -8,19 +8,61 @@ export type Occasion =
   | 'carnival'
   | 'womensDay'
   | 'easter'
+  | 'orthodoxEaster'
   | 'sechselaeuten'
   | 'labourDay'
   | 'mothersDay'
+  | 'fathersDay'
   | 'ascension'
   | 'pentecost'
   | 'solstice'
+  | 'midsummer'
   | 'swissNationalDay'
   | 'halloween'
   | 'stNicholas'
   | 'advent'
   | 'christmas'
+  | 'boxingDay'
   | 'newYearsEve'
   | 'newYear'
+  | 'epiphany'
+  | 'stPatricksDay'
+  | 'stMartin'
+  | 'stLucia'
+  | 'germanUnityDay'
+  | 'austrianNationalDay'
+  | 'liechtensteinNationalDay'
+  | 'bastilleDay'
+  | 'italianRepublicDay'
+  | 'spanishNationalDay'
+  | 'kingsDay'
+  | 'independenceDayUS'
+  | 'canadaDay'
+  | 'mexicanIndependenceDay'
+  | 'brazilIndependenceDay'
+  | 'australiaDay'
+  | 'waitangiDay'
+  | 'indianIndependenceDay'
+  | 'polishIndependenceDay'
+  | 'ukrainianIndependenceDay'
+  | 'constitutionDayNO'
+  | 'thanksgiving'
+  | 'guyFawkesNight'
+  | 'dayOfTheDead'
+  | 'childrensDay'
+  | 'tanabata'
+  | 'hanami'
+  | 'lunarNewYear'
+  | 'midAutumn'
+  | 'nowruz'
+  | 'ramadan'
+  | 'eidAlFitr'
+  | 'eidAlAdha'
+  | 'hanukkah'
+  | 'diwali'
+  | 'holi'
+  | 'vesak'
+  | 'kwanzaa'
 
 type Texts = {
   seasons: Record<Season, string>
@@ -57,20 +99,63 @@ const EN: Texts = {
     carnival: 'Carnival',
     womensDay: "International Women's Day",
     easter: 'Easter',
+    orthodoxEaster: 'Orthodox Easter',
     sechselaeuten: 'Sechseläuten',
     labourDay: 'Labour Day',
     mothersDay: "Mother's Day",
+    fathersDay: "Father's Day",
     ascension: 'Ascension Day',
     pentecost: 'Pentecost',
-    solstice: 'Midsummer',
+    solstice: 'Summer solstice',
+    midsummer: 'Midsummer',
+    swissNationalDay: 'Swiss National Day',
     halloween: 'Halloween',
     stNicholas: 'St Nicholas Day',
-    swissNationalDay: 'Swiss National Day',
     advent: 'Advent',
     christmas: 'Christmas',
+    boxingDay: 'Boxing Day',
     newYearsEve: "New Year's Eve",
     newYear: 'New Year',
+    epiphany: 'Epiphany',
+    stPatricksDay: "St Patrick's Day",
+    stMartin: "St Martin's Day",
+    stLucia: "St Lucy's Day",
+    germanUnityDay: 'German Unity Day',
+    austrianNationalDay: 'Austrian National Day',
+    liechtensteinNationalDay: 'Liechtenstein National Day',
+    bastilleDay: 'Bastille Day',
+    italianRepublicDay: 'Republic Day (Italy)',
+    spanishNationalDay: 'Spanish National Day',
+    kingsDay: "King's Day",
+    independenceDayUS: 'Independence Day',
+    canadaDay: 'Canada Day',
+    mexicanIndependenceDay: 'Mexican Independence Day',
+    brazilIndependenceDay: 'Brazilian Independence Day',
+    australiaDay: 'Australia Day',
+    waitangiDay: 'Waitangi Day',
+    indianIndependenceDay: 'Independence Day (India)',
+    polishIndependenceDay: 'Polish Independence Day',
+    ukrainianIndependenceDay: 'Ukrainian Independence Day',
+    constitutionDayNO: 'Norwegian Constitution Day',
+    thanksgiving: 'Thanksgiving',
+    guyFawkesNight: 'Guy Fawkes Night',
+    dayOfTheDead: 'Day of the Dead',
+    childrensDay: "Children's Day",
+    tanabata: 'Tanabata',
+    hanami: 'Cherry blossom season',
+    lunarNewYear: 'Lunar New Year',
+    midAutumn: 'Mid-Autumn Festival',
+    nowruz: 'Nowruz',
+    ramadan: 'Ramadan',
+    eidAlFitr: 'Eid al-Fitr',
+    eidAlAdha: 'Eid al-Adha',
+    hanukkah: 'Hanukkah',
+    diwali: 'Diwali',
+    holi: 'Holi',
+    vesak: 'Vesak',
+    kwanzaa: 'Kwanzaa',
   },
+
   weather: { clear: 'clear', sunset: 'sunset', fog: 'fog', magic: 'magic' },
   falling: { always: 'always', burst: 'a few seconds after each change', freeze: 'a few seconds after each change, then frozen in mid-air', off: 'off' },
   fallingSet: mode => `Falling: ${mode}. Remembered for your next sessions.`,
@@ -119,20 +204,63 @@ const DE: Texts = {
     carnival: 'Fasnacht',
     womensDay: 'Tag der Frau',
     easter: 'Ostern',
+    orthodoxEaster: 'Orthodoxe Ostern',
     sechselaeuten: 'Sechseläuten',
     labourDay: 'Tag der Arbeit',
     mothersDay: 'Muttertag',
+    fathersDay: 'Vatertag',
     ascension: 'Auffahrt',
     pentecost: 'Pfingsten',
     solstice: 'Sommersonnenwende',
+    midsummer: 'Mittsommer',
+    swissNationalDay: '1. August',
     halloween: 'Halloween',
     stNicholas: 'St. Nikolaus',
-    swissNationalDay: '1. August',
     advent: 'Advent',
     christmas: 'Weihnachten',
+    boxingDay: 'Boxing Day',
     newYearsEve: 'Silvester',
     newYear: 'Neujahr',
+    epiphany: 'Dreikönigstag',
+    stPatricksDay: "St. Patrick's Day",
+    stMartin: 'Martinstag',
+    stLucia: 'Luciafest',
+    germanUnityDay: 'Tag der Deutschen Einheit',
+    austrianNationalDay: 'Österreichischer Nationalfeiertag',
+    liechtensteinNationalDay: 'Staatsfeiertag Liechtenstein',
+    bastilleDay: 'Französischer Nationalfeiertag',
+    italianRepublicDay: 'Tag der Republik (Italien)',
+    spanishNationalDay: 'Spanischer Nationalfeiertag',
+    kingsDay: 'Königstag',
+    independenceDayUS: 'Unabhängigkeitstag (USA)',
+    canadaDay: 'Canada Day',
+    mexicanIndependenceDay: 'Unabhängigkeitstag Mexikos',
+    brazilIndependenceDay: 'Unabhängigkeitstag Brasiliens',
+    australiaDay: 'Australia Day',
+    waitangiDay: 'Waitangi-Tag',
+    indianIndependenceDay: 'Unabhängigkeitstag Indiens',
+    polishIndependenceDay: 'Unabhängigkeitstag Polens',
+    ukrainianIndependenceDay: 'Unabhängigkeitstag der Ukraine',
+    constitutionDayNO: 'Norwegischer Nationalfeiertag',
+    thanksgiving: 'Thanksgiving',
+    guyFawkesNight: 'Guy-Fawkes-Nacht',
+    dayOfTheDead: 'Tag der Toten',
+    childrensDay: 'Kindertag',
+    tanabata: 'Tanabata',
+    hanami: 'Kirschblütenzeit',
+    lunarNewYear: 'Chinesisches Neujahr',
+    midAutumn: 'Mondfest',
+    nowruz: 'Nouruz',
+    ramadan: 'Ramadan',
+    eidAlFitr: 'Zuckerfest',
+    eidAlAdha: 'Opferfest',
+    hanukkah: 'Chanukka',
+    diwali: 'Diwali',
+    holi: 'Holi',
+    vesak: 'Vesakh',
+    kwanzaa: 'Kwanzaa',
   },
+
   weather: { clear: 'klar', sunset: 'Abendrot', fog: 'Nebel', magic: 'Zauber' },
   falling: { always: 'immer', burst: 'ein paar Sekunden nach jeder Änderung', freeze: 'ein paar Sekunden nach jeder Änderung, dann bleibt alles in der Luft stehen', off: 'aus' },
   fallingSet: mode => `Fallen: ${mode}. Wird für die nächsten Sitzungen gemerkt.`,
@@ -182,4 +310,62 @@ const ALL: Record<Language, Texts> = { en: EN, de: DE }
 /** The texts in the language the settings name, English when it names another. */
 export function t(): Texts {
   return ALL[SETTINGS.language] ?? EN
+}
+
+// ── words for /backdrop ───────────────────────────────────────────────────
+
+/** Words /backdrop understands in one language. Every language's words work, whatever the setting. */
+export type Words = {
+  occasions: Partial<Record<Occasion, string[]>>
+  seasons: Record<Season, string[]>
+}
+
+export const WORDS: Record<'en' | 'de', Words> = {
+  en: {
+    seasons: { winter: ['winter'], firstSnow: ['firstsnow'], thaw: ['thaw'], spring: ['spring'], summer: ['summer'], autumn: ['autumn', 'fall'] },
+    occasions: {
+      valentinesDay: ['valentine', 'valentinesday'], carnival: ['carnival'], womensDay: ['womensday'], easter: ['easter'],
+      orthodoxEaster: ['orthodoxeaster'], sechselaeuten: ['sechselaeuten', 'boeoegg'], labourDay: ['labourday', 'laborday', 'mayday'],
+      mothersDay: ['mothersday'], fathersDay: ['fathersday'], ascension: ['ascension'], pentecost: ['pentecost', 'whitsun'],
+      solstice: ['solstice'], midsummer: ['midsummer'], swissNationalDay: ['nationalday', 'swissnationalday', 'august1'],
+      halloween: ['halloween'], stNicholas: ['stnicholas', 'nicholas'], advent: ['advent'], christmas: ['christmas'],
+      boxingDay: ['boxingday'], newYearsEve: ['newyearseve'], newYear: ['newyear'], epiphany: ['epiphany'],
+      stPatricksDay: ['stpatricksday', 'stpatrick'], stMartin: ['stmartin'], stLucia: ['stlucia', 'lucia'],
+      germanUnityDay: ['germanunityday'], austrianNationalDay: ['austriannationalday'], liechtensteinNationalDay: ['liechtensteinnationalday'],
+      bastilleDay: ['bastilleday'], italianRepublicDay: ['italianrepublicday'], spanishNationalDay: ['spanishnationalday'],
+      kingsDay: ['kingsday', 'koningsdag'], independenceDayUS: ['independenceday', 'fourthofjuly', 'july4'], canadaDay: ['canadaday'],
+      mexicanIndependenceDay: ['mexicanindependenceday'], brazilIndependenceDay: ['brazilindependenceday'], australiaDay: ['australiaday'],
+      waitangiDay: ['waitangiday'], indianIndependenceDay: ['indianindependenceday'], polishIndependenceDay: ['polishindependenceday'],
+      ukrainianIndependenceDay: ['ukrainianindependenceday'], constitutionDayNO: ['syttendemai', 'norwegianconstitutionday'],
+      thanksgiving: ['thanksgiving'], guyFawkesNight: ['guyfawkesnight', 'bonfirenight'], dayOfTheDead: ['dayofthedead', 'diademuertos'],
+      childrensDay: ['childrensday', 'kodomonohi'], tanabata: ['tanabata'], hanami: ['hanami', 'cherryblossom'],
+      lunarNewYear: ['lunarnewyear', 'chinesenewyear'], midAutumn: ['midautumn', 'mooncake'], nowruz: ['nowruz'],
+      ramadan: ['ramadan'], eidAlFitr: ['eidalfitr', 'eid'], eidAlAdha: ['eidaladha'], hanukkah: ['hanukkah', 'chanukah'],
+      diwali: ['diwali', 'deepavali'], holi: ['holi'], vesak: ['vesak', 'wesak'], kwanzaa: ['kwanzaa'],
+    },
+  },
+  de: {
+    seasons: { winter: ['winter'], firstSnow: ['ersterschnee'], thaw: ['tauwetter', 'schmelze'], spring: ['frühling'], summer: ['sommer'], autumn: ['herbst'] },
+    occasions: {
+      valentinesDay: ['valentinstag'], carnival: ['fasnacht', 'fasching', 'karneval'], womensDay: ['tagderfrau', 'frauentag'], easter: ['ostern'],
+      orthodoxEaster: ['orthodoxeostern'], sechselaeuten: ['sechseläuten', 'böögg'], labourDay: ['tagderarbeit'], mothersDay: ['muttertag'],
+      fathersDay: ['vatertag'], ascension: ['auffahrt', 'himmelfahrt'], pentecost: ['pfingsten'], solstice: ['sonnenwende', 'sommersonnenwende'],
+      midsummer: ['mittsommer'], swissNationalDay: ['nationalfeiertag', 'bundesfeier'], stNicholas: ['nikolaus', 'samichlaus'],
+      christmas: ['weihnachten'], boxingDay: ['stephanstag'], newYearsEve: ['silvester'], newYear: ['neujahr'], epiphany: ['dreikönigstag', 'dreikönige'],
+      stMartin: ['martinstag', 'martini'], stLucia: ['luciafest'], germanUnityDay: ['tagderdeutscheneinheit', 'einheit'],
+      austrianNationalDay: ['österreich'], liechtensteinNationalDay: ['staatsfeiertag'], bastilleDay: ['frankreich'],
+      italianRepublicDay: ['festadellarepubblica'], spanishNationalDay: ['spanien'], kingsDay: ['königstag'],
+      independenceDayUS: ['unabhängigkeitstag'], dayOfTheDead: ['tagdertoten'], childrensDay: ['kindertag'],
+      hanami: ['kirschblüte'], lunarNewYear: ['chinesischesneujahr', 'neujahrsfest'], midAutumn: ['mondfest'], nowruz: ['nouruz'],
+      eidAlFitr: ['zuckerfest'], eidAlAdha: ['opferfest'], hanukkah: ['chanukka'], vesak: ['vesakh'], thanksgiving: ['erntedank'],
+    },
+  },
+}
+
+/** Lower case without accents, so 'pâques' = 'paques' and 'Frühling' = 'fruhling'. */
+export function normalizeWord(word: string): string {
+  return word
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
 }

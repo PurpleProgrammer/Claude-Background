@@ -1,6 +1,7 @@
 import { t, type Occasion, type Season } from './i18n.js'
 import { occasionContext } from './context.js'
-import { dayNumber, occasionDef, occasionOn, type DateParts } from './occasions.js'
+import { fireworks, regionalDecor, seeded, starPath, type DecorResult, type ParticleKind } from './decor.js'
+import { dayNumber, occasionDayIndex, occasionDef, occasionOn, type DateParts } from './occasions.js'
 import { SETTINGS, type Weather } from './settings.js'
 
 const CFG = SETTINGS
@@ -30,13 +31,6 @@ export type SceneInput = {
 
 const clamp = (v: number, lo = 0, hi = 1): number => Math.max(lo, Math.min(hi, v))
 
-function seeded(seed: number): () => number {
-  let s = seed >>> 0
-  return () => {
-    s = (s * 1664525 + 1013904223) % 4294967296
-    return s / 4294967296
-  }
-}
 
 export function escapeXml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -170,11 +164,11 @@ const SKY: Record<Weather, { light: [string, string, string]; dark: [string, str
 
 // ── pieces of the scene ───────────────────────────────────────────────────
 
-function particles(y: YearState, percent: number, rand: () => number, shift = 0): string {
+function particles(y: YearState, percent: number, rand: () => number, shift = 0, kind?: ParticleKind): string {
   const p = clamp(percent / 100)
   const count = Math.round(CFG.flakes.minimum + p * (CFG.flakes.maximum - CFG.flakes.minimum))
   const baseFall = 22 - p * 10
-  const w = y.fall
+  const w = kind === 'petal' ? { snow: 0, petal: 1, fluff: 0, leaf: 0 } : kind === 'leaf' ? { snow: 0, petal: 0, fluff: 0, leaf: 1 } : y.fall
   const total = w.snow + w.petal + w.fluff + w.leaf
   let out = ''
   for (let i = 0; i < count; i++) {
@@ -185,7 +179,12 @@ function particles(y: YearState, percent: number, rand: () => number, shift = 0)
     const dur = baseFall * (0.7 + rand() * 0.6)
     // shift moves every flake on by that many seconds, so a frozen frame matches the moment it froze.
     const delay = -rand() * dur - shift
-    if (pick < w.snow) {
+    if (kind === 'shamrock') {
+      out += `<g transform="translate(${x} ${yy})"><g class="f l${lane}" style="animation-duration:${(dur * 1.2).toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"><circle cx="-3" cy="-2" r="3.4" fill="#2e8b3e"/><circle cx="3" cy="-2" r="3.4" fill="#2e8b3e"/><circle cx="0" cy="-7" r="3.4" fill="#2e8b3e"/></g></g>`
+    } else if (kind === 'colour') {
+      const c = ['#e0457e', '#ffd21f', '#2f8fd8', '#2e8b3e', '#ff7f00', '#8e44ad'][i % 6] ?? '#e0457e'
+      out += `<circle class="f f${lane}" cx="${x}" cy="${yy}" r="${(6 + rand() * 8).toFixed(1)}" fill="${c}" opacity="0.45" style="animation-duration:${(dur * 1.4).toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"/>`
+    } else if (pick < w.snow) {
       const r = (1.2 + rand() * 2.6).toFixed(1)
       const op = (0.55 + rand() * 0.45).toFixed(2)
       out += `<circle class="f s f${lane}" cx="${x}" cy="${yy}" r="${r}" opacity="${op}" style="animation-duration:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"/>`
@@ -234,7 +233,7 @@ function stars(rand: () => number): string {
   return `<g class="stars">${out}</g>`
 }
 
-function celestial(clicked: boolean): string {
+function celestial(clicked: boolean, variant?: 'crescent' | 'big'): string {
   const face = clicked
     ? `<g class="face">
         <circle cx="-15" cy="-10" r="5" class="eye"/><circle cx="15" cy="-10" r="5" class="eye"/>
@@ -242,13 +241,18 @@ function celestial(clicked: boolean): string {
         <circle cx="-27" cy="8" r="6" class="cheek"/><circle cx="27" cy="8" r="6" class="cheek"/>
       </g>`
     : ''
-  return `<g transform="translate(0 200)">
+  // A crescent: the disc with an offset disc cut away; a big moon for the Mid-Autumn Festival.
+  const moon =
+    variant === 'crescent'
+      ? `<mask id="crescent"><circle r="46" fill="#ffffff"/><circle cx="20" cy="-10" r="40" fill="#000000"/></mask><circle r="46" class="disc" mask="url(#crescent)"/>`
+      : `<circle r="46" class="disc"/><circle cx="-14" cy="12" r="7" class="crater"/><circle cx="16" cy="-14" r="5" class="crater"/>${face}`
+  return `<g transform="translate(0 ${variant === 'big' ? 230 : 200}) scale(${variant === 'big' ? 1.7 : 1})">
     <g class="sun"><circle r="58" class="halo"/><circle r="44" class="disc"/>${face}</g>
-    <g class="moon"><circle r="46" class="disc"/><circle cx="-14" cy="12" r="7" class="crater"/><circle cx="16" cy="-14" r="5" class="crater"/>${face}</g>
+    <g class="moon">${moon}</g>
   </g>`
 }
 
-function pines(y: YearState, occasion: Occasion | undefined, clicked: boolean, rand: () => number): string {
+function pines(y: YearState, lights: DecorResult['treeLights'], clicked: boolean, rand: () => number): string {
   const n = Math.max(0, Math.min(8, Math.round(CFG.trees)))
   let out = ''
   let tallest = { x: 0, top: 9999 }
@@ -293,7 +297,7 @@ function pines(y: YearState, occasion: Occasion | undefined, clicked: boolean, r
   }
 
   // Lights and star on the tallest tree.
-  if (n > 0 && (occasion === 'advent' || occasion === 'christmas')) {
+  if (n > 0 && lights !== undefined) {
     const colors = ['#ffd54a', '#ff6b6b', '#6bc5ff', '#8cff8c']
     let lights = ''
     for (let k = 0; k < 14; k++) {
@@ -303,22 +307,13 @@ function pines(y: YearState, occasion: Occasion | undefined, clicked: boolean, r
       lights += `<circle cx="${lx}" cy="${ly}" r="4.5" fill="${colors[k % 4] ?? '#ffd54a'}" class="bulb" style="animation-delay:${((k % 5) * 0.6).toFixed(1)}s"/>`
     }
     out += lights
-    if (occasion === 'christmas') {
+    if (lights === 'christmas') {
       out += `<path class="xstar" d="${starPath(tallest.x, tallest.top - 6, 16, 7)}"/>`
     }
   }
   return out
 }
 
-function starPath(cx: number, cy: number, r1: number, r2: number): string {
-  let d = ''
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 === 0 ? r1 : r2
-    const a = (Math.PI / 5) * i - Math.PI / 2
-    d += `${i === 0 ? 'M' : 'L'}${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)} `
-  }
-  return d + 'Z'
-}
 
 function stage(percent: number): { hat: boolean; scarf: boolean; broom: boolean } {
   return {
@@ -373,7 +368,7 @@ function moodMarks(mood: Mood | undefined, top: number): string {
 
 // ── costumes: what the figure wears on occasions ─────────────────────────
 
-type Costume = { hat?: string; hand?: string; face?: string }
+type Costume = { hat?: string; hand?: string; face?: string; body?: string }
 
 function costumeFor(occasion: Occasion | undefined): Costume {
   const key = occasion !== undefined && CFG.costumes ? occasionDef(occasion)?.costume : undefined
@@ -393,9 +388,23 @@ function costumeFor(occasion: Occasion | undefined): Costume {
       return { hand: key }
     case 'sunglasses':
       return { face: 'sunglasses' }
+    case 'crown':
+    case 'greenHat':
+    case 'candleWreath':
+    case 'flowerWreath':
+      return { hat: key }
+    case 'tie':
+      return { body: 'tie' }
     default:
       return {}
   }
+}
+
+/** A tie on the chest at (0, y). */
+function costumeBody(kind: string, y: number): string {
+  return kind === 'tie'
+    ? `<path d="M-9 ${y} L9 ${y} L5 ${y + 12} L12 ${y + 58} L0 ${y + 72} L-12 ${y + 58} L-5 ${y + 12} Z" fill="#c0392b"/><path d="M-6 ${y + 26} L8 ${y + 18} M-8 ${y + 44} L10 ${y + 36}" stroke="#ffd54a" stroke-width="3"/>`
+    : ''
 }
 
 /** A costume hat, its brim at (0, 0) and pointing up. */
@@ -430,6 +439,18 @@ function costumeHat(kind: string): string {
         <path d="M-40 -4 Q-20 -70 0 -76 Q20 -70 40 -4 Z" fill="#2f6a9a"/>
         <circle cx="-98" cy="-58" r="9" fill="#e8c34a"/><circle cx="98" cy="-58" r="9" fill="#e8c34a"/><circle cx="0" cy="-80" r="9" fill="#e8c34a"/>
         <rect x="-46" y="-14" width="92" height="14" rx="6" fill="#ffffff"/>`
+    case 'crown':
+      return `<path d="M-34 -2 L-38 -52 L-18 -30 L0 -60 L18 -30 L38 -52 L34 -2 Z" fill="#e8c34a" stroke="#c9a030" stroke-width="2"/>
+        <circle cx="0" cy="-22" r="6" fill="#c0392b"/><circle cx="-20" cy="-16" r="4" fill="#2f6a9a"/><circle cx="20" cy="-16" r="4" fill="#2e8b3e"/>`
+    case 'greenHat':
+      return `<ellipse cx="0" cy="-2" rx="62" ry="11" fill="#1f7a34"/><path d="M-34 -6 L-30 -78 L30 -78 L34 -6 Z" fill="#2e8b3e"/>
+        <rect x="-33" y="-24" width="66" height="12" fill="#1f1f24"/><rect x="-8" y="-26" width="16" height="16" fill="none" stroke="#ffd54a" stroke-width="3"/>`
+    case 'candleWreath':
+      return `<ellipse cx="0" cy="-4" rx="46" ry="12" fill="none" stroke="#3f7d3a" stroke-width="9"/>
+        ${[-32, -12, 12, 32].map(x => `<rect x="${x - 4}" y="-40" width="8" height="32" fill="#ffffff"/><path class="flame" d="M${x} -56 Q${x + 5} -48 ${x} -42 Q${x - 5} -48 ${x} -56 Z" fill="#ffcc33"/>`).join('')}`
+    case 'flowerWreath':
+      return `<ellipse cx="0" cy="-4" rx="46" ry="11" fill="none" stroke="#4f8f45" stroke-width="7"/>
+        ${[-40, -24, -8, 8, 24, 40].map((x, i) => `<circle cx="${x}" cy="${-6 - (i % 2) * 4}" r="7" fill="${['#ffd54a', '#f49ab5', '#ffffff', '#b48cff'][i % 4] ?? '#ffd54a'}"/>`).join('')}`
     default:
       return ''
   }
@@ -517,6 +538,7 @@ function snowman(y: YearState, percent: number, mood?: Mood): string {
     }
     const costume = costumeFor(y.occasion)
     if (costume.face !== undefined) face += costumeFace(costume.face, 16, -342)
+    if (costume.body !== undefined) face += costumeBody(costume.body, -268)
     if (costume.hand !== undefined) face += handItem(costume.hand, hand.r[0] ?? 150, hand.r[1] ?? -280)
     const hatClass = mood === 'fright' ? 'hatpop' : ''
     if (costume.hat !== undefined) {
@@ -568,6 +590,7 @@ function scarecrow(percent: number, mood?: Mood, occasion?: Occasion): string {
   if (s.scarf) out += `<path d="M-40 -300 L40 -300 L0 -262 Z" fill="${CFG.colors.scarf}"/><circle cx="-6" cy="-292" r="3" fill="#ffffff"/><circle cx="10" cy="-290" r="3" fill="#ffffff"/>`
   const costume = costumeFor(occasion)
   if (costume.face !== undefined) out += costumeFace(costume.face, 15, -345)
+  if (costume.body !== undefined) out += costumeBody(costume.body, -296)
   if (costume.hand !== undefined) out += handItem(costume.hand, 165, -292)
   if (costume.hat !== undefined) out += `<g transform="translate(0 -378)">${costumeHat(costume.hat)}</g>`
   else if (s.hat) out += `<ellipse cx="0" cy="-376" rx="80" ry="14" fill="#d9b44a"/><path d="M-40 -378 Q-38 -420 0 -422 Q38 -420 40 -378 Z" fill="#e3c25a"/><rect x="-40" y="-392" width="80" height="10" fill="${CFG.colors.hat}"/>`
@@ -576,11 +599,12 @@ function scarecrow(percent: number, mood?: Mood, occasion?: Occasion): string {
   return out
 }
 
-function easterDecor(): string {
-  const eggs: [number, number, string, string][] = [
+function easterDecor(red = false): string {
+  const allEggs: [number, number, string, string][] = [
     [520, 900, '#ff8fb1', '#ffffff'], [610, 925, '#6bc5ff', '#ffd54a'], [760, 905, '#ffd54a', '#e67e22'],
     [900, 930, '#8cd17d', '#ffffff'], [1020, 900, '#b48cff', '#ffd54a'], [1110, 935, '#ff6b6b', '#ffffff'],
   ]
+  const eggs = red ? allEggs.map(([x, y, , s]) => [x, y, '#c0392b', s] as [number, number, string, string]) : allEggs
   let out = eggs
     .map(([x, y, c, s]) => `<g transform="translate(${x} ${y}) rotate(${(x % 30) - 15})"><ellipse rx="16" ry="21" fill="${c}"/><path d="M-15 -4 Q0 2 15 -4 M-14 6 Q0 12 14 6" stroke="${s}" stroke-width="3" fill="none"/></g>`)
     .join('')
@@ -616,21 +640,6 @@ function swissDay(): string {
     </g>`
 }
 
-function fireworks(palette: string[], rand: () => number): string {
-  let out = ''
-  for (let i = 0; i < 6; i++) {
-    const cx = Math.round(380 + rand() * 820)
-    const cy = Math.round(120 + rand() * 230)
-    const c = palette[i % palette.length] ?? '#ffffff'
-    let dots = ''
-    for (let k = 0; k < 14; k++) {
-      const a = (Math.PI * 2 * k) / 14
-      dots += `<circle cx="${(Math.cos(a) * 60).toFixed(1)}" cy="${(Math.sin(a) * 60).toFixed(1)}" r="3.2" fill="${c}"/>`
-    }
-    out += `<g transform="translate(${cx} ${cy})"><g class="fw" style="animation-delay:${(i * 1.15).toFixed(2)}s">${dots}</g></g>`
-  }
-  return `<g class="fireworks">${out}</g>`
-}
 
 function presents(): string {
   return `<g transform="translate(600 860)">
@@ -834,6 +843,58 @@ function pinned(share: number, align: 'xMidYMax' | 'xMidYMin', content: string):
   return `<svg x="${pct}%" y="0" width="0.1" height="100%" viewBox="-0.5 0 1 1000" preserveAspectRatio="${align} slice" overflow="visible">${content}</svg>`
 }
 
+/** What an occasion adds to the scene, by its decoration key. */
+function decorFor(occasion: Occasion | undefined, date: DateParts, forced: boolean): DecorResult {
+  if (occasion === undefined) {
+    return {}
+  }
+  const key = occasionDef(occasion)?.decor ?? occasion
+  switch (key) {
+    case 'easter':
+      return { ground: easterDecor() }
+    case 'orthodoxEaster':
+      return { ground: easterDecor(true) }
+    case 'womensDay':
+      return { ground: womensDayDecor() }
+    case 'valentinesDay':
+      return { ground: valentinesDecor() }
+    case 'carnival':
+      return { ground: carnivalDecor() }
+    case 'ascension':
+      return { sky: ascensionDecor() }
+    case 'mothersDay':
+      return { ground: mothersDayDecor() }
+    case 'sechselaeuten':
+      return { ground: sechselaeutenDecor() }
+    case 'solstice':
+      return { ground: solsticeDecor() }
+    case 'stNicholas':
+      return { ground: stNicholasDecor() }
+    case 'labourDay':
+      return { ground: labourDayDecor() }
+    case 'pentecost': {
+      const p = pentecostDecor()
+      return { sky: p.sky, ground: p.ground }
+    }
+    case 'halloween':
+      return { ground: halloweenDecor() }
+    case 'swissNationalDay':
+      return { ground: swissDay(), sky: fireworks(['#d52b1e', '#ffffff', '#ff6b6b'], seeded(3)) }
+    case 'newYearsEve':
+    case 'newYear':
+      return { sky: fireworks(['#ffd54a', '#6bc5ff', '#ff6b6b', '#8cff8c', '#ffffff'], seeded(5)) }
+    case 'christmas':
+      return { ground: presents(), treeLights: 'christmas' }
+    case 'advent':
+      return { treeLights: 'advent' }
+    default: {
+      // In a preview the date may not be inside the occasion: count from day one then.
+      const dayIndex = forced ? 0 : occasionDayIndex(occasion, date, occasionContext())
+      return regionalDecor(key, dayIndex) ?? {}
+    }
+  }
+}
+
 // ── the whole scene ──────────────────────────────────────────────────────
 
 export function buildScene(input: SceneInput): string {
@@ -859,32 +920,9 @@ export function buildScene(input: SceneInput): string {
   let sky2 = ''
   const magic = input.weather === 'magic' ? magicSky(seeded(31)) : ''
   const fall = input.fall ?? { show: true }
-  if (y.occasion === 'easter') extras += easterDecor()
-  if (y.occasion === 'womensDay') extras += womensDayDecor()
-  if (y.occasion === 'valentinesDay') extras += valentinesDecor()
-  if (y.occasion === 'carnival') extras += carnivalDecor()
-  if (y.occasion === 'ascension') sky2 += ascensionDecor()
-  if (y.occasion === 'mothersDay') extras += mothersDayDecor()
-  if (y.occasion === 'sechselaeuten') extras += sechselaeutenDecor()
-  if (y.occasion === 'solstice') extras += solsticeDecor()
-  if (y.occasion === 'stNicholas') extras += stNicholasDecor()
-  if (y.occasion === 'labourDay') extras += labourDayDecor()
-  if (y.occasion === 'pentecost') {
-    const p2 = pentecostDecor()
-    sky2 += p2.sky
-    extras += p2.ground
-  }
-  if (y.occasion === 'halloween') {
-    extras += halloweenDecor()
-  }
-  if (y.occasion === 'swissNationalDay') {
-    extras += swissDay()
-    sky2 += fireworks(['#d52b1e', '#ffffff', '#ff6b6b'], seeded(3))
-  }
-  if (y.occasion === 'newYearsEve' || y.occasion === 'newYear') {
-    sky2 += fireworks(['#ffd54a', '#6bc5ff', '#ff6b6b', '#8cff8c', '#ffffff'], seeded(5))
-  }
-  if (y.occasion === 'christmas') extras += presents()
+  const decor = decorFor(y.occasion, input.date, input.occasion !== undefined)
+  sky2 += decor.sky ?? ''
+  extras += decor.ground ?? ''
 
   const greeting = y.occasion === 'newYear' ? `<text x="800" y="90" text-anchor="middle" class="greet">${escapeXml(t().newYearGreeting)}</text>` : ''
 
@@ -960,6 +998,11 @@ export function buildScene(input: SceneInput): string {
   .glow { fill: #5a2a00; }
   .fadeaway { animation: fadeaway 2.5s ease-in 1 both; }
   .frozen * { animation-play-state: paused; }
+  .darkonly { opacity: 0; }
+  .shine { opacity: 0.15; animation: shine 3s ease-in-out infinite; }
+  .flame { animation: fire 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .koi { animation: sway 4s ease-in-out infinite; transform-box: fill-box; transform-origin: 0% 50%; }
+  .comet { animation: glow 6s ease-in-out infinite; }
   .heart { animation: rise 16s ease-in-out infinite; opacity: 0; }
   .balloon { animation: balloon 40s ease-in-out infinite alternate; }
   .firefly { fill: #fff27a; opacity: 0; animation: firefly 6s ease-in-out infinite; }
@@ -995,6 +1038,7 @@ export function buildScene(input: SceneInput): string {
   @keyframes dove { from { transform: translate(-120px, 260px); } 50% { transform: translate(800px, 180px); } to { transform: translate(1750px, 240px); } }
   @keyframes bat { from { transform: translate(-80px, 0px); } 25% { transform: translate(400px, 40px); } 50% { transform: translate(800px, -20px); } 75% { transform: translate(1200px, 30px); } to { transform: translate(1700px, 0px); } }
   @keyframes flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
+  @keyframes shine { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.35; } }
   @keyframes fadeaway { from { opacity: 1; } to { opacity: 0; } }
   @keyframes rise { 0% { opacity: 0; transform: translate(0px, 0px); } 10% { opacity: 0.9; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translate(30px, -620px); } }
   @keyframes balloon { from { transform: translate(0px, 60px); } to { transform: translate(-120px, -320px); } }
@@ -1015,6 +1059,7 @@ export function buildScene(input: SceneInput): string {
     .aurora path { opacity: 0.45; animation: drift 40s ease-in-out infinite alternate; }
     .wing { stroke: #c9d8e8; }
     .greet { fill: #ffd54a; }
+    .darkonly { opacity: 1; }
     .skytop { fill: ${sky.dark[0]}; }
     .glow { fill: #ffcf4a; }
     .spark { fill: #fff3a0; }
@@ -1041,21 +1086,22 @@ ${sky2}
 ${greeting}
 </svg>
 <!-- moon or sun, pinned to a share of the window width, scaled with its height -->
-${pinned(input.layout?.moonX ?? CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>`)}
+${pinned(input.layout?.moonX ?? CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked, decor.moon)}</g>`)}
 <!-- hills -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
 <path class="far" d="M0 640 C 220 560 420 600 640 570 C 880 535 1100 600 1320 560 C 1450 540 1530 560 1600 575 L1600 1000 L0 1000 Z"/>
-${pines(y, y.occasion, clicked, seeded(21))}
+${pines(y, decor.treeLights, clicked, seeded(21))}
 <path class="near" d="M0 740 C 260 690 520 720 800 700 C 1080 680 1320 730 1600 705 L1600 1000 L0 1000 Z"/>
 <path class="ground" d="M0 840 C 300 815 700 835 1000 822 C 1250 812 1450 830 1600 825 L1600 1000 L0 1000 Z"/>
 ${fog}
 ${extras}
+${decor.tint ? `<rect x="-2000" y="-2000" width="5600" height="5000" fill="${decor.tint}" opacity="0.12"/>` : ''}
 </svg>
 <!-- figure, pinned to a share of the window width, scaled with its height -->
 ${pinned(input.layout?.figureX ?? CFG.layout.figureX, 'xMidYMax', `<g transform="translate(0 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>`)}
 <!-- falling things, in front of the figure -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-${fall.show ? `<g class="${fall.paused ? 'frozen' : fall.fadeAfter !== undefined ? 'fadeaway' : ''}"${fall.fadeAfter !== undefined && !fall.paused ? ` style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand, fall.shift ?? 0)}</g>` : ''}
+${fall.show ? `<g class="${fall.paused ? 'frozen' : fall.fadeAfter !== undefined ? 'fadeaway' : ''}"${fall.fadeAfter !== undefined && !fall.paused ? ` style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand, fall.shift ?? 0, decor.particles)}</g>` : ''}
 ${input.click ? `<g>${gust(y, input.click, seeded(input.click.seq + 101))}</g>` : ''}
 </svg>
 <!-- label, pinned to a top corner in screen pixels -->

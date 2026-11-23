@@ -1,7 +1,7 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
 import { occasionContext, region } from './context.js'
-import { t } from './i18n.js'
+import { normalizeWord, t, WORDS, type Season } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
 import { nextOccasionStart } from './occasions.js'
@@ -155,42 +155,38 @@ function alias(words: string[], date: (y: number) => DateParts): void {
     PREVIEW_DATES[w] = date
   }
 }
-alias(['winter'], y => ({ y: y + 1, m: 1, d: 20 }))
-alias(['firstsnow', 'ersterschnee'], y => ({ y, m: 11, d: 10 }))
-alias(['thaw', 'tauwetter', 'schmelze'], y => ({ y: y + 1, m: 3, d: 16 }))
-alias(['spring', 'frühling', 'fruehling'], y => ({ y: y + 1, m: 4, d: 25 }))
-alias(['summer', 'sommer'], y => ({ y: y + 1, m: 7, d: 15 }))
-alias(['autumn', 'fall', 'herbst'], y => ({ y: y + 1, m: 10, d: 20 }))
+const SEASON_PREVIEW: Record<Season, (y: number) => DateParts> = {
+  winter: y => ({ y: y + 1, m: 1, d: 20 }),
+  firstSnow: y => ({ y, m: 11, d: 10 }),
+  thaw: y => ({ y: y + 1, m: 3, d: 16 }),
+  spring: y => ({ y: y + 1, m: 4, d: 25 }),
+  summer: y => ({ y: y + 1, m: 7, d: 15 }),
+  autumn: y => ({ y: y + 1, m: 10, d: 20 }),
+}
 const PREVIEW_OCCASIONS: Record<string, Occasion> = {}
 
 /** The next time an occasion comes round, counted from today. */
 function next(o: Occasion): (y: number) => DateParts {
-  // The next time it comes round from today; a year ahead when it has no date soon.
+  // A year ahead when it has no date soon (e.g. a festival past the end of its table).
   return y => nextOccasionStart(o, today, occasionContext()) ?? { y: y + 1, m: 1, d: 1 }
 }
+
 function occasionAlias(words: string[], o: Occasion): void {
   alias(words, next(o))
   for (const w of words) {
     PREVIEW_OCCASIONS[w] = o
   }
 }
-occasionAlias(['valentine', 'valentinesday', 'valentinstag'], 'valentinesDay')
-occasionAlias(['carnival', 'fasnacht', 'fasching'], 'carnival')
-occasionAlias(['womensday', 'tagderfrau', 'frauentag'], 'womensDay')
-occasionAlias(['easter', 'ostern'], 'easter')
-occasionAlias(['sechselaeuten', 'sechseläuten', 'böögg', 'boeoegg'], 'sechselaeuten')
-occasionAlias(['labourday', 'laborday', 'mayday', 'tagderarbeit'], 'labourDay')
-occasionAlias(['mothersday', 'muttertag'], 'mothersDay')
-occasionAlias(['ascension', 'auffahrt'], 'ascension')
-occasionAlias(['pentecost', 'whitsun', 'pfingsten'], 'pentecost')
-occasionAlias(['midsummer', 'solstice', 'sonnenwende', 'sommersonnenwende'], 'solstice')
-occasionAlias(['nationalday', 'swissnationalday', 'august1', 'nationalfeiertag'], 'swissNationalDay')
-occasionAlias(['halloween'], 'halloween')
-occasionAlias(['stnicholas', 'nicholas', 'nikolaus', 'samichlaus'], 'stNicholas')
-occasionAlias(['advent'], 'advent')
-occasionAlias(['christmas', 'weihnachten'], 'christmas')
-occasionAlias(['newyearseve', 'silvester'], 'newYearsEve')
-occasionAlias(['newyear', 'neujahr'], 'newYear')
+
+// Every language's words for seasons and occasions, accents optional.
+for (const words of Object.values(WORDS)) {
+  for (const [season, list] of Object.entries(words.seasons) as [Season, string[]][]) {
+    alias(list.map(normalizeWord), SEASON_PREVIEW[season])
+  }
+  for (const [o, list] of Object.entries(words.occasions) as [Occasion, string[]][]) {
+    occasionAlias([o.toLowerCase(), ...list].map(normalizeWord), o)
+  }
+}
 
 const WEATHER_WORDS: Record<string, Weather> = {
   clear: 'clear',
@@ -339,10 +335,10 @@ function applyArgs(args: string): string {
     preview.percent = Math.max(0, Math.min(100, Number(value)))
     return describe()
   }
-  const season = PREVIEW_DATES[cmd]
+  const season = PREVIEW_DATES[normalizeWord(cmd)]
   if (season !== undefined) {
     preview.date = season(today.y)
-    preview.occasion = PREVIEW_OCCASIONS[cmd]
+    preview.occasion = PREVIEW_OCCASIONS[normalizeWord(cmd)]
     return describe()
   }
   return `${tx.unknown(args.trim())}\n\n${tx.help}`
