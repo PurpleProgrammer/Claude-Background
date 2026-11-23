@@ -1,46 +1,66 @@
-# Winterlandschaft
+# Winter Landscape
 
-Ein Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landschaft, die auf deine Sitzung reagiert.
+**English** · [Deutsch](README.de.md)
 
-- **Kontext:** Je voller der Kontext, desto dichter fällt der Schnee. Der Schneemann bekommt ab 25 % eine Mütze, ab 50 % einen Schal und ab 75 % Besen und Fäustlinge.
-- **Modell:** Oben links steht das aktuelle Modell mit dem Kontext-Füllstand. Jedes Modell hat sein eigenes Wetter: Opus klar, Sonnet Abendrot (nachts Nordlicht), Haiku Nebel.
-- **Klick auf den Hintergrund:** Schneegestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
-- **Jahreszeiten mit Übergängen:** Im November wird der Schneemann gebaut, im März schmilzt er. Im Frühling blühen Blumen, im Sommer und Herbst steht eine Vogelscheuche.
-- **Anlässe:** Ostern, 1. August, Advent, Weihnachten, Silvester und Neujahr.
+A background for the Claude app (desktop and mobile): a simple landscape that follows your session.
+
+- **Context:** the fuller the context, the heavier the snowfall. The snowman puts on a hat at 25 %, a scarf at 50 % and a broom with mittens at 75 %.
+- **Model:** the current model and how full the context is are shown top left. Each model has its own weather: Opus clear, Sonnet sunset (northern lights at night), Haiku fog.
+- **Moods:** passing tests make the snowman cheer (arms up, hopping, confetti). Failing tests and errors give it a fright (wide eyes, hat pops up, a red “!”).
+- **Click the background:** a snow flurry, snow falls off the fir trees, and the moon or sun smiles.
+- **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn.
+- **Occasions:** Easter, Swiss National Day (1 August), Advent, Christmas, New Year's Eve and New Year.
 
 ## Installation
 
-In einer Terminal-Sitzung von Claude Code:
+At the prompt of a Claude Code terminal session:
 
 ```
-/plugin install winterlandschaft --marketplace PurpleProgrammer/claude-background
+/plugin install winter-landscape --marketplace PurpleProgrammer/claude-background
 ```
 
-Danach `y` drücken, um den Marketplace hinzuzufügen, und mit Enter den Bereich wählen.
+Then press `y` to add the marketplace and Enter to choose the scope.
 
-Aus einer Shell:
+From a shell:
 
 ```bash
-claude plugin install winterlandschaft --marketplace PurpleProgrammer/claude-background
+claude plugin install winter-landscape --marketplace PurpleProgrammer/claude-background
 ```
 
-In der Desktop-App, wo `/plugin` nicht läuft: auf **+** neben dem Eingabefeld klicken, dann **Plugins**, **Add marketplace** mit `PurpleProgrammer/claude-background`, dann **Add plugin**.
+In the desktop app, where `/plugin` does not run: click **+** next to the prompt box, then **Plugins**, **Add marketplace** with `PurpleProgrammer/claude-background`, then **Add plugin**.
 
-Ist das Repository privat, klappt die Installation nur für Personen, die es auf GitHub lesen dürfen und auf deren Rechner bereits ein Git-Zugang für github.com eingerichtet ist (SSH-Schlüssel oder `gh auth login` und danach `gh auth setup-git`).
+The background shows in the desktop and mobile apps. The terminal draws no background.
 
-Der Hintergrund erscheint in der Desktop- und der Mobil-App. Im Terminal wird kein Hintergrund gezeichnet.
+## Preview with `/winter`
 
-## Vorschau mit `/winter`
-
-| Befehl | Wirkung |
+| Command | Effect |
 |---|---|
-| `/winter` | zeigt den aktuellen Zustand |
-| `/winter ostern` | Jahreszeit oder Anlass ansehen: `winter`, `ersterschnee`, `schmelze`, `frühling`, `sommer`, `herbst`, `ostern`, `nationalfeiertag`, `advent`, `weihnachten`, `silvester`, `neujahr` |
-| `/winter datum 2027-03-20` | beliebiges Datum |
-| `/winter wetter nebel` | Wetter `klar`, `abendrot` oder `nebel` |
-| `/winter kontext 80` | Kontext-Füllstand simulieren |
-| `/winter zurück` | Vorschau beenden |
+| `/winter` | show the current state |
+| `/winter easter` | preview a season or occasion: `winter`, `firstsnow`, `thaw`, `spring`, `summer`, `autumn`, `easter`, `nationalday`, `advent`, `christmas`, `newyearseve`, `newyear` |
+| `/winter date 2027-03-20` | any date |
+| `/winter weather fog` | weather `clear`, `sunset` or `fog` |
+| `/winter context 80` | simulate how full the context is |
+| `/winter cheer` · `/winter fright` | let the figure cheer or get a fright |
+| `/winter reset` | end all previews |
 
-## Anpassen
+## Customising
 
-Alle Einstellungen stehen mit Kommentaren in [`hooks/einstellungen.ts`](hooks/einstellungen.ts): Anzahl Tannen, Figurgrösse, Farben der Accessoires, Prozent-Stufen, Flockenmenge, Wetter je Modell, Dauer der Klick-Effekte, Anlässe und die Kalenderdaten für Schnee und Tauwetter.
+Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each:
+
+- `language`: `'en'` or `'de'` for all texts in the scene and in `/winter`
+- number of fir trees and size of the figure
+- colours of hat, pompom, scarf, mittens and broom
+- the context stages for the accessories
+- how many flakes fall with an empty and a full context
+- weather per model
+- how long click effects and moods last, and whether any error startles the figure
+- which occasions are shown
+- calendar dates for the first snow and the thaw
+
+## Credits
+
+`hooks/make-colors.js` and `hooks/make-colors.d.ts` are copied unchanged from the Claude Code plugin-authoring kit, which provides them for mods to include. They remain under their original terms.
+
+## License
+
+[MIT](LICENSE)

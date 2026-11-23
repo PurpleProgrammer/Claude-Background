@@ -1,14 +1,15 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
-import { EINSTELLUNGEN, type Wetter } from './einstellungen.js'
+import { t } from './i18n.js'
 import { makeColors } from './make-colors.js'
-import { ANLASS_NAME, buildScene, easterSunday, jahreslauf, type Datum } from './scene.js'
+import { buildScene, easterSunday, yearState, type DateParts, type Mood } from './scene.js'
+import { SETTINGS, type Weather } from './settings.js'
 
 const SCENE = 'winter'
 
 // Cool, snowy grays by day and a blue winter night.
 const { theme, problems } = makeColors({
-  label: 'Winterlandschaft',
+  label: 'Winter landscape',
   roles: { accent: '#2f6a9a', danger: '#b23a3a', success: '#3f7d55', warning: '#a8721a', pro: '#6a55a0' },
   light: {
     gray: {
@@ -45,12 +46,21 @@ const LOOK: ThemeSetArgs = {
 // What the scene draws from. A reload starts these over; session.start refills them.
 let percent = 0
 let modelId = ''
-let today: Datum = { y: 2026, m: 1, d: 1 }
+let today: DateParts = { y: 2026, m: 1, d: 1 }
 let click: { x: number; y: number; seq: number } | undefined
 let clickSeq = 0
+let mood: Mood | undefined
+let moodSeq = 0
 
-// Previews set with /winter; they last until /winter zurück or a reload.
-const preview: { date?: Datum; weather?: Wetter; percent?: number } = {}
+/** Commands that run tests. */
+const TEST_COMMAND =
+  /\b(npm|pnpm|yarn|bun)\s+(run\s+)?test\b|\bnpx\s+(jest|vitest|mocha|playwright\s+test)\b|(^|[\s;&|])(jest|vitest|pytest|mocha|rspec|phpunit|tox)\b|\b(cargo|go|dotnet|mix|deno|swift)\s+test\b|\bclaude\s+plugin\s+test\b|\bmake\s+(test|check)\b|\b(gradlew?|mvn)\s+\S*\s*test\b|\bpython3?\s+-m\s+(pytest|unittest)\b/
+
+/** A test runner's summary that reports failures even where the exit code says nothing. */
+const FAILED_SUMMARY = /\b[1-9]\d*\s+(failed|failing|failures?|errors?)\b|\bFAIL(ED)?\b/
+
+// Previews set with /winter; they last until /winter reset or a reload.
+const preview: { date?: DateParts; weather?: Weather; percent?: number } = {}
 
 /** "claude-opus-5-5" -> "Opus 5.5"; anything else stays as it is. */
 function prettyModel(id: string): string {
@@ -64,18 +74,18 @@ function prettyModel(id: string): string {
   return `${name} ${m[2] ?? ''}.${m[3] ?? ''}`
 }
 
-function weatherFor(id: string): Wetter {
+function weatherFor(id: string): Weather {
   const low = id.toLowerCase()
-  for (const [key, w] of Object.entries(EINSTELLUNGEN.wetterProModell)) {
+  for (const [key, w] of Object.entries(SETTINGS.weatherByModel)) {
     if (low.includes(key.toLowerCase())) {
       return w
     }
   }
-  return 'klar'
+  return 'clear'
 }
 
-/** Today's date in Switzerland. */
-function swissDate(ms: number): Datum {
+/** Today's date in Switzerland, where the occasions are counted. */
+function swissDate(ms: number): DateParts {
   try {
     const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms))
     const [y, m, d] = parts.split('-').map(Number)
@@ -85,8 +95,8 @@ function swissDate(ms: number): Datum {
   } catch {
     // Fall back to UTC below.
   }
-  const t = new Date(ms)
-  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }
+  const now = new Date(ms)
+  return { y: now.getUTCFullYear(), m: now.getUTCMonth() + 1, d: now.getUTCDate() }
 }
 
 type Session$ = {
@@ -118,7 +128,7 @@ async function refresh($: Session$): Promise<boolean> {
   return before !== snapshot()
 }
 
-function current(): { p: number; date: Datum; weather: Wetter } {
+function current(): { p: number; date: DateParts; weather: Weather } {
   return {
     p: preview.percent ?? percent,
     date: preview.date ?? today,
@@ -126,85 +136,99 @@ function current(): { p: number; date: Datum; weather: Wetter } {
   }
 }
 
-const SEASON_DATES: Record<string, (y: number) => Datum> = {
-  winter: y => ({ y: y + 1, m: 1, d: 20 }),
-  schmelze: y => ({ y: y + 1, m: 3, d: 16 }),
-  tauwetter: y => ({ y: y + 1, m: 3, d: 16 }),
-  frühling: y => ({ y: y + 1, m: 4, d: 25 }),
-  fruehling: y => ({ y: y + 1, m: 4, d: 25 }),
-  sommer: y => ({ y: y + 1, m: 7, d: 15 }),
-  herbst: y => ({ y: y + 1, m: 10, d: 20 }),
-  ersterschnee: y => ({ y, m: 11, d: 10 }),
-  ostern: y => easterSunday(y + 1),
-  nationalfeiertag: y => ({ y: y + 1, m: 8, d: 1 }),
-  advent: y => ({ y, m: 12, d: 6 }),
-  weihnachten: y => ({ y, m: 12, d: 24 }),
-  silvester: y => ({ y, m: 12, d: 31 }),
-  neujahr: y => ({ y: y + 1, m: 1, d: 1 }),
+/** Preview dates for /winter, by English and German words. */
+const PREVIEW_DATES: Record<string, (y: number) => DateParts> = {}
+function alias(words: string[], date: (y: number) => DateParts): void {
+  for (const w of words) {
+    PREVIEW_DATES[w] = date
+  }
+}
+alias(['winter'], y => ({ y: y + 1, m: 1, d: 20 }))
+alias(['firstsnow', 'ersterschnee'], y => ({ y, m: 11, d: 10 }))
+alias(['thaw', 'tauwetter', 'schmelze'], y => ({ y: y + 1, m: 3, d: 16 }))
+alias(['spring', 'frühling', 'fruehling'], y => ({ y: y + 1, m: 4, d: 25 }))
+alias(['summer', 'sommer'], y => ({ y: y + 1, m: 7, d: 15 }))
+alias(['autumn', 'fall', 'herbst'], y => ({ y: y + 1, m: 10, d: 20 }))
+alias(['easter', 'ostern'], y => easterSunday(y + 1))
+alias(['nationalday', 'swissnationalday', 'august1', 'nationalfeiertag'], y => ({ y: y + 1, m: 8, d: 1 }))
+alias(['advent'], y => ({ y, m: 12, d: 6 }))
+alias(['christmas', 'weihnachten'], y => ({ y, m: 12, d: 24 }))
+alias(['newyearseve', 'silvester'], y => ({ y, m: 12, d: 31 }))
+alias(['newyear', 'neujahr'], y => ({ y: y + 1, m: 1, d: 1 }))
+
+const WEATHER_WORDS: Record<string, Weather> = { clear: 'clear', klar: 'clear', sunset: 'sunset', abendrot: 'sunset', fog: 'fog', nebel: 'fog' }
+const MOOD_WORDS: Record<string, Mood> = { cheer: 'cheer', jubel: 'cheer', fright: 'fright', schreck: 'fright' }
+
+type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }
+
+function feel($: Clock$, next: Mood): void {
+  if (!SETTINGS.moods.enabled) {
+    return
+  }
+  moodSeq += 1
+  const seq = moodSeq
+  mood = next
+  $.ui.invalidate('ui.render')
+  $.clock.after(SETTINGS.moods.seconds * 1000, () => {
+    if (moodSeq === seq) {
+      mood = undefined
+      $.ui.invalidate('ui.render')
+    }
+  })
 }
 
-const HELP = [
-  'Vorschau der Winterlandschaft:',
-  '  /winter                      zeigt den aktuellen Zustand',
-  '  /winter <jahreszeit|anlass>  winter, ersterschnee, schmelze, frühling, sommer, herbst,',
-  '                               ostern, nationalfeiertag, advent, weihnachten, silvester, neujahr',
-  '  /winter datum 2027-03-20     beliebiges Datum',
-  '  /winter wetter klar|abendrot|nebel',
-  '  /winter kontext 80           Kontext-Füllstand simulieren',
-  '  /winter zurück               alle Vorschauen beenden',
-].join('\n')
-
 function describe(): string {
+  const tx = t()
   const c = current()
-  const y = jahreslauf(c.date)
-  const st = EINSTELLUNGEN.stufen
-  const acc = [c.p >= st.muetze && 'Mütze', c.p >= st.schal && 'Schal', c.p >= st.besen && 'Besen und Fäustlinge'].filter(Boolean)
-  const lines = [
-    `Datum: ${c.date.d}.${c.date.m}.${c.date.y}${preview.date ? ' (Vorschau)' : ''}`,
-    `Jahreszeit: ${y.season}${y.anlass ? ` · Anlass: ${ANLASS_NAME[y.anlass]}` : ''}`,
-    `Modell: ${prettyModel(modelId) || 'unbekannt'} · Wetter: ${c.weather}${preview.weather ? ' (Vorschau)' : ''}`,
-    `Kontext: ${Math.round(c.p)} %${preview.percent !== undefined ? ' (Vorschau)' : ''} · Accessoires: ${acc.length > 0 ? acc.join(', ') : 'noch keine'}`,
-  ]
-  return lines.join('\n')
+  const y = yearState(c.date)
+  const st = SETTINGS.stages
+  const acc = [c.p >= st.hat && tx.accessories.hat, c.p >= st.scarf && tx.accessories.scarf, c.p >= st.broom && tx.accessories.broom].filter(Boolean)
+  const mark = (on: boolean): string => (on ? ` ${tx.preview}` : '')
+  return [
+    `${tx.labels.date}: ${tx.date(c.date.y, c.date.m, c.date.d)}${mark(preview.date !== undefined)}`,
+    `${tx.labels.season}: ${tx.seasons[y.season]}${y.occasion ? ` · ${tx.labels.occasion}: ${tx.occasions[y.occasion]}` : ''}`,
+    `${tx.labels.model}: ${prettyModel(modelId) || tx.unknownModel} · ${tx.labels.weather}: ${tx.weather[c.weather]}${mark(preview.weather !== undefined)}`,
+    `${tx.labels.context}: ${tx.contextShare(Math.round(c.p))}${mark(preview.percent !== undefined)} · ${tx.labels.accessories}: ${acc.length > 0 ? acc.join(', ') : tx.accessories.none}`,
+  ].join('\n')
 }
 
 function applyArgs(args: string): string {
-  const parts = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  const [cmd, value] = parts
+  const tx = t()
+  const [cmd, value] = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
   if (cmd === undefined) {
     return describe()
   }
-  if (cmd === 'hilfe' || cmd === 'help') {
-    return HELP
+  if (cmd === 'help' || cmd === 'hilfe') {
+    return tx.help
   }
-  if (cmd === 'zurück' || cmd === 'zurueck' || cmd === 'reset') {
+  if (cmd === 'reset' || cmd === 'zurück' || cmd === 'zurueck') {
     delete preview.date
     delete preview.weather
     delete preview.percent
-    return 'Vorschau beendet.\n' + describe()
+    return `${tx.previewEnded}\n${describe()}`
   }
-  if (cmd === 'datum' && value !== undefined) {
+  if ((cmd === 'date' || cmd === 'datum') && value !== undefined) {
     const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value)
     if (m === null) {
-      return 'Bitte so: /winter datum 2027-03-20'
+      return tx.dateUsage
     }
     preview.date = { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) }
     return describe()
   }
-  if (cmd === 'wetter' && (value === 'klar' || value === 'abendrot' || value === 'nebel')) {
-    preview.weather = value
+  if ((cmd === 'weather' || cmd === 'wetter') && value !== undefined && WEATHER_WORDS[value] !== undefined) {
+    preview.weather = WEATHER_WORDS[value]
     return describe()
   }
-  if (cmd === 'kontext' && value !== undefined && !Number.isNaN(Number(value))) {
+  if ((cmd === 'context' || cmd === 'kontext') && value !== undefined && !Number.isNaN(Number(value))) {
     preview.percent = Math.max(0, Math.min(100, Number(value)))
     return describe()
   }
-  const season = SEASON_DATES[cmd]
+  const season = PREVIEW_DATES[cmd]
   if (season !== undefined) {
     preview.date = season(today.y)
     return describe()
   }
-  return `Unbekannt: "${args.trim()}".\n\n${HELP}`
+  return `${tx.unknown(args.trim())}\n\n${tx.help}`
 }
 
 export const register: Register = on => {
@@ -218,7 +242,7 @@ export const register: Register = on => {
     if (!set.isDrawn) {
       $.ui.status(set.reason)
     }
-    await $.command.register({ name: 'winter', description: 'Winterlandschaft: Vorschau von Jahreszeiten, Anlässen, Wetter und Kontext' })
+    await $.command.register({ name: 'winter', description: t().commandDescription })
     // Look at the date now and then, so seasons and occasions change by themselves.
     $.clock.every(30 * 60 * 1000, () => {
       void refresh($).then(changed => {
@@ -233,6 +257,11 @@ export const register: Register = on => {
 
   on('command.run', { command: 'winter' }, async ($, e) => {
     await refresh($)
+    const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
+    if (asMood !== undefined) {
+      feel($, asMood)
+      return { text: asMood === 'cheer' ? t().cheer : t().fright }
+    }
     const text = applyArgs(e.args)
     $.ui.invalidate('ui.render')
     return { text }
@@ -250,6 +279,27 @@ export const register: Register = on => {
     return result
   })
 
+  // Passing tests make the figure cheer; failing tests and errors give it a fright.
+  on('tool.call', async ($, e, next) => {
+    const ran = await next(e)
+    try {
+      if (ran.deny !== undefined) {
+        return ran
+      }
+      const command = e.tool === 'Bash' ? String((e as { command?: unknown }).command ?? '') : ''
+      if (command !== '' && TEST_COMMAND.test(command)) {
+        const output = JSON.stringify(ran.result ?? '').slice(-4000)
+        const failed = ran.isError === true || FAILED_SUMMARY.test(output)
+        feel($, failed ? 'fright' : 'cheer')
+      } else if (ran.isError === true && SETTINGS.moods.onAnyError) {
+        feel($, 'fright')
+      }
+    } catch {
+      // A reaction is decoration: never let it disturb the tool call.
+    }
+    return ran
+  }).catch(($, e, next) => next(e))
+
   // A click on the bare backdrop: a flurry, snow off the trees, a smiling moon.
   on('ui.pointer', ($, e, next) => {
     if (e.scene === SCENE) {
@@ -257,7 +307,7 @@ export const register: Register = on => {
       const seq = clickSeq
       click = { x: e.x, y: e.y, seq }
       $.ui.invalidate('ui.render')
-      $.clock.after(EINSTELLUNGEN.klickDauerSekunden * 1000, () => {
+      $.clock.after(SETTINGS.clickEffectSeconds * 1000, () => {
         if (click?.seq === seq) {
           click = undefined
           $.ui.invalidate('ui.render')
@@ -273,12 +323,13 @@ export const register: Register = on => {
     }
     const { Svg } = $.ui.resolve(e)
     const c = current()
-    const y = jahreslauf(c.date)
+    const y = yearState(c.date)
+    const model = prettyModel(modelId)
 
     return (
       <Svg
-        source={buildScene({ percent: c.p, modelLabel: prettyModel(modelId), weather: c.weather, date: c.date, click })}
-        alt={`Landschaft (${y.season}), Kontext zu ${Math.round(c.p)} Prozent gefüllt, Modell ${prettyModel(modelId)}`}
+        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, click, mood })}
+        alt={t().alt(t().seasons[y.season], Math.round(c.p), model)}
         isInteractive
       />
     )

@@ -1,16 +1,19 @@
-import { EINSTELLUNGEN, type Wetter } from './einstellungen.js'
+import { t, type Occasion, type Season } from './i18n.js'
+import { SETTINGS, type Weather } from './settings.js'
 
-const CFG = EINSTELLUNGEN
+const CFG = SETTINGS
 
-export type Anlass = 'ostern' | 'nationalfeiertag' | 'advent' | 'weihnachten' | 'silvester' | 'neujahr'
+export type DateParts = { y: number; m: number; d: number }
 
-export type Datum = { y: number; m: number; d: number }
+export type Mood = 'cheer' | 'fright'
 
 export type SceneInput = {
   percent: number
+  /** How the figure feels right now: cheering after passing tests, startled after an error. */
+  mood?: Mood
   modelLabel: string
-  weather: Wetter
-  date: Datum
+  weather: Weather
+  date: DateParts
   /** Set while a click effect plays: where the click landed (0 to 1). */
   click?: { x: number; y: number; seq: number }
 }
@@ -49,7 +52,7 @@ function dayNumber(y: number, m: number, d: number): number {
 }
 
 /** 0 before `from`, 1 after `to`, in between a straight ramp. Dates as [month, day] in year y. */
-function ramp(date: Datum, from: [number, number], to: [number, number]): number {
+function ramp(date: DateParts, from: [number, number], to: [number, number]): number {
   const now = dayNumber(date.y, date.m, date.d)
   const a = dayNumber(date.y, from[0], from[1])
   const b = dayNumber(date.y, to[0], to[1])
@@ -59,7 +62,7 @@ function ramp(date: Datum, from: [number, number], to: [number, number]): number
   return clamp((now - a) / (b - a))
 }
 
-export function easterSunday(y: number): Datum {
+export function easterSunday(y: number): DateParts {
   const a = y % 19
   const b = Math.floor(y / 100)
   const c = y % 100
@@ -79,7 +82,7 @@ export function easterSunday(y: number): Datum {
 
 // ── the year: seasons and occasions ───────────────────────────────────────
 
-export type Jahreslauf = {
+export type YearState = {
   /** Snow on the ground, 0 to 1. */
   snow: number
   /** Autumn colours, 0 to 1. */
@@ -88,50 +91,50 @@ export type Jahreslauf = {
   build: number
   /** Snowman melted, 0 to 1. */
   melt: number
-  figure: 'schneemann' | 'reste' | 'vogelscheuche'
-  season: string
-  anlass?: Anlass
+  figure: 'snowman' | 'remains' | 'scarecrow'
+  season: Season
+  occasion?: Occasion
   /** Weights of the falling things: snow, petals, fluff, leaves. */
   fall: { snow: number; petal: number; fluff: number; leaf: number }
 }
 
-export function jahreslauf(date: Datum): Jahreslauf {
-  const k = CFG.kalender
+export function yearState(date: DateParts): YearState {
+  const k = CFG.calendar
   const { m } = date
-  const snowIn = ramp(date, k.schneeBeginnt, k.schneeKomplett)
-  const snowOut = ramp(date, k.schmelzeBeginn, k.schmelzeEnde)
+  const snowIn = ramp(date, k.snowStarts, k.snowComplete)
+  const snowOut = ramp(date, k.thawStart, k.thawEnd)
   const inLateYear = m >= 9
   const snow = inLateYear ? snowIn : 1 - snowOut
-  const build = inLateYear ? ramp(date, k.schneemannBauBeginn, k.schneemannBauEnde) : 1
+  const build = inLateYear ? ramp(date, k.snowmanBuildStart, k.snowmanBuildEnd) : 1
   const melt = inLateYear ? 0 : snowOut
 
   // Leaves turn from September to mid October and stay until the snow covers them.
   const autumn = inLateYear ? ramp(date, [9, 1], [10, 15]) : 0
 
-  let figure: Jahreslauf['figure']
+  let figure: YearState['figure']
   if (inLateYear && build > 0) {
-    figure = 'schneemann'
+    figure = 'snowman'
   } else if (!inLateYear && melt < 1) {
-    figure = 'schneemann'
+    figure = 'snowman'
   } else if (m >= 4 && m <= 5) {
-    figure = 'reste'
+    figure = 'remains'
   } else {
-    figure = 'vogelscheuche'
+    figure = 'scarecrow'
   }
 
-  let season: string
+  let season: Season
   if (snow >= 0.99) {
-    season = 'Winter'
+    season = 'winter'
   } else if (!inLateYear && melt > 0 && melt < 1) {
-    season = 'Tauwetter'
+    season = 'thaw'
   } else if (inLateYear && snow > 0) {
-    season = 'Erster Schnee'
+    season = 'firstSnow'
   } else if (m >= 3 && m <= 5) {
-    season = 'Frühling'
+    season = 'spring'
   } else if (m >= 6 && m <= 8) {
-    season = 'Sommer'
+    season = 'summer'
   } else {
-    season = 'Herbst'
+    season = 'autumn'
   }
 
   const fall = {
@@ -144,43 +147,34 @@ export function jahreslauf(date: Datum): Jahreslauf {
     fall.fluff = 1
   }
 
-  return { snow, autumn, build, melt, figure, season, anlass: anlassAm(date), fall }
+  return { snow, autumn, build, melt, figure, season, occasion: occasionOn(date), fall }
 }
 
-export function anlassAm(date: Datum): Anlass | undefined {
-  const on = CFG.anlaesse
+export function occasionOn(date: DateParts): Occasion | undefined {
+  const on = CFG.occasions
   const { y, m, d } = date
   const today = dayNumber(y, m, d)
   const e = easterSunday(y)
   const easter = dayNumber(e.y, e.m, e.d)
-  if (on.ostern && today >= easter - 2 && today <= easter + 1) {
-    return 'ostern'
+  if (on.easter && today >= easter - 2 && today <= easter + 1) {
+    return 'easter'
   }
-  if (on.nationalfeiertag && ((m === 7 && d === 31) || (m === 8 && d === 1))) {
-    return 'nationalfeiertag'
+  if (on.swissNationalDay && ((m === 7 && d === 31) || (m === 8 && d === 1))) {
+    return 'swissNationalDay'
   }
-  if (on.silvester && m === 12 && d === 31) {
-    return 'silvester'
+  if (on.newYear && m === 12 && d === 31) {
+    return 'newYearsEve'
   }
-  if (on.silvester && m === 1 && d === 1) {
-    return 'neujahr'
+  if (on.newYear && m === 1 && d === 1) {
+    return 'newYear'
   }
-  if (on.weihnachten && m === 12 && d >= 24 && d <= 26) {
-    return 'weihnachten'
+  if (on.christmas && m === 12 && d >= 24 && d <= 26) {
+    return 'christmas'
   }
   if (on.advent && m === 12 && d < 24) {
     return 'advent'
   }
   return undefined
-}
-
-export const ANLASS_NAME: Record<Anlass, string> = {
-  ostern: 'Ostern',
-  nationalfeiertag: '1. August',
-  advent: 'Advent',
-  weihnachten: 'Weihnachten',
-  silvester: 'Silvester',
-  neujahr: 'Neujahr',
 }
 
 // ── colours ───────────────────────────────────────────────────────────────
@@ -200,23 +194,23 @@ const GROUND = {
   },
 }
 
-function ground(mode: 'light' | 'dark', y: Jahreslauf): Ground {
+function ground(mode: 'light' | 'dark', y: YearState): Ground {
   const g = GROUND[mode]
   const base = (k: keyof Ground): string => mix(mix(g.green[k], g.autumn[k], y.autumn), g.snow[k], y.snow)
   return { far: base('far'), near: base('near'), ground: base('ground') }
 }
 
-const SKY: Record<Wetter, { light: [string, string, string]; dark: [string, string, string] }> = {
-  klar: { light: ['#9fc6e8', '#c7def1', '#eef5fb'], dark: ['#070f1c', '#13233c', '#23395a'] },
-  abendrot: { light: ['#6f82bd', '#f0a384', '#fbd9a8'], dark: ['#140b26', '#3a1f48', '#6a3558'] },
-  nebel: { light: ['#bfc8d1', '#d6dde3', '#e9edf0'], dark: ['#171c23', '#262e38', '#3a444f'] },
+const SKY: Record<Weather, { light: [string, string, string]; dark: [string, string, string] }> = {
+  clear: { light: ['#9fc6e8', '#c7def1', '#eef5fb'], dark: ['#070f1c', '#13233c', '#23395a'] },
+  sunset: { light: ['#6f82bd', '#f0a384', '#fbd9a8'], dark: ['#140b26', '#3a1f48', '#6a3558'] },
+  fog: { light: ['#bfc8d1', '#d6dde3', '#e9edf0'], dark: ['#171c23', '#262e38', '#3a444f'] },
 }
 
 // ── pieces of the scene ───────────────────────────────────────────────────
 
-function particles(y: Jahreslauf, percent: number, rand: () => number): string {
+function particles(y: YearState, percent: number, rand: () => number): string {
   const p = clamp(percent / 100)
-  const count = Math.round(CFG.flocken.minimum + p * (CFG.flocken.maximum - CFG.flocken.minimum))
+  const count = Math.round(CFG.flakes.minimum + p * (CFG.flakes.maximum - CFG.flakes.minimum))
   const baseFall = 22 - p * 10
   const w = y.fall
   const total = w.snow + w.petal + w.fluff + w.leaf
@@ -245,7 +239,7 @@ function particles(y: Jahreslauf, percent: number, rand: () => number): string {
   return out
 }
 
-function gust(y: Jahreslauf, click: { x: number; y: number }, rand: () => number): string {
+function gust(y: YearState, click: { x: number; y: number }, rand: () => number): string {
   const cx = Math.round(click.x * 1600)
   const cy = Math.round(click.y * 1000)
   let out = ''
@@ -291,8 +285,8 @@ function celestial(clicked: boolean): string {
   </g>`
 }
 
-function pines(y: Jahreslauf, anlass: Anlass | undefined, clicked: boolean, rand: () => number): string {
-  const n = Math.max(0, Math.min(8, Math.round(CFG.anzahlTannen)))
+function pines(y: YearState, occasion: Occasion | undefined, clicked: boolean, rand: () => number): string {
+  const n = Math.max(0, Math.min(8, Math.round(CFG.trees)))
   let out = ''
   let tallest = { x: 0, top: 9999 }
   for (let i = 0; i < n; i++) {
@@ -336,7 +330,7 @@ function pines(y: Jahreslauf, anlass: Anlass | undefined, clicked: boolean, rand
   }
 
   // Lights and star on the tallest tree.
-  if (n > 0 && (anlass === 'advent' || anlass === 'weihnachten')) {
+  if (n > 0 && (occasion === 'advent' || occasion === 'christmas')) {
     const colors = ['#ffd54a', '#ff6b6b', '#6bc5ff', '#8cff8c']
     let lights = ''
     for (let k = 0; k < 14; k++) {
@@ -346,7 +340,7 @@ function pines(y: Jahreslauf, anlass: Anlass | undefined, clicked: boolean, rand
       lights += `<circle cx="${lx}" cy="${ly}" r="4.5" fill="${colors[k % 4] ?? '#ffd54a'}" class="bulb" style="animation-delay:${((k % 5) * 0.6).toFixed(1)}s"/>`
     }
     out += lights
-    if (anlass === 'weihnachten') {
+    if (occasion === 'christmas') {
       out += `<path class="xstar" d="${starPath(tallest.x, tallest.top - 6, 16, 7)}"/>`
     }
   }
@@ -363,25 +357,25 @@ function starPath(cx: number, cy: number, r1: number, r2: number): string {
   return d + 'Z'
 }
 
-function stage(percent: number): { muetze: boolean; schal: boolean; besen: boolean } {
+function stage(percent: number): { hat: boolean; scarf: boolean; broom: boolean } {
   return {
-    muetze: percent >= CFG.stufen.muetze,
-    schal: percent >= CFG.stufen.schal,
-    besen: percent >= CFG.stufen.besen,
+    hat: percent >= CFG.stages.hat,
+    scarf: percent >= CFG.stages.scarf,
+    broom: percent >= CFG.stages.broom,
   }
 }
 
 function beanie(cx: number, cy: number, rot = 0): string {
-  const c = CFG.farben
+  const c = CFG.colors
   return `<g transform="translate(${cx} ${cy}) rotate(${rot})">
-    <path d="M-44 0 Q-46 -58 0 -62 Q46 -58 44 0 Z" fill="${c.muetze}"/>
-    <rect x="-48" y="-12" width="96" height="18" rx="8" fill="${mix(c.muetze, '#000000', 0.25)}"/>
-    <circle cx="0" cy="-66" r="14" fill="${c.bommel}"/>
+    <path d="M-44 0 Q-46 -58 0 -62 Q46 -58 44 0 Z" fill="${c.hat}"/>
+    <rect x="-48" y="-12" width="96" height="18" rx="8" fill="${mix(c.hat, '#000000', 0.25)}"/>
+    <circle cx="0" cy="-66" r="14" fill="${c.pompom}"/>
   </g>`
 }
 
 function scarf(cy: number): string {
-  const c = CFG.farben.schal
+  const c = CFG.colors.scarf
   const dark = mix(c, '#000000', 0.2)
   return `<path d="M-52 ${cy} Q0 ${cy + 22} 52 ${cy} L56 ${cy + 16} Q0 ${cy + 40} -56 ${cy + 16} Z" fill="${c}"/>
     <path d="M26 ${cy + 14} L44 ${cy + 78} L24 ${cy + 80} L12 ${cy + 18} Z" fill="${dark}"/>
@@ -389,13 +383,31 @@ function scarf(cy: number): string {
 }
 
 function broom(x: number, top: number, bottom: number): string {
-  const c = CFG.farben
-  return `<path d="M${x} ${top} L${x + 6} ${bottom - 60}" stroke="${c.besenstiel}" stroke-width="8" stroke-linecap="round"/>
-    <path d="M${x - 22} ${bottom} L${x - 4} ${bottom - 64} L${x + 16} ${bottom - 64} L${x + 36} ${bottom} Z" fill="${c.besenreisig}"/>
-    <path d="M${x - 2} ${bottom - 52} L${x + 14} ${bottom - 52}" stroke="${mix(c.besenreisig, '#000000', 0.35)}" stroke-width="4"/>`
+  const c = CFG.colors
+  return `<path d="M${x} ${top} L${x + 6} ${bottom - 60}" stroke="${c.broomHandle}" stroke-width="8" stroke-linecap="round"/>
+    <path d="M${x - 22} ${bottom} L${x - 4} ${bottom - 64} L${x + 16} ${bottom - 64} L${x + 36} ${bottom} Z" fill="${c.broomBristles}"/>
+    <path d="M${x - 2} ${bottom - 52} L${x + 14} ${bottom - 52}" stroke="${mix(c.broomBristles, '#000000', 0.35)}" stroke-width="4"/>`
 }
 
-function snowman(y: Jahreslauf, percent: number): string {
+/** Little signs above the head: confetti for joy, an exclamation mark for a fright. */
+function moodMarks(mood: Mood | undefined, top: number): string {
+  if (mood === 'cheer') {
+    const cols = ['#ffd54a', '#ff6b6b', '#6bc5ff', '#8cff8c', '#f49ab5']
+    let out = ''
+    for (let i = 0; i < 12; i++) {
+      const x = Math.round(Math.cos(i * 2.1) * (60 + (i % 3) * 30))
+      const y = top + Math.round(Math.sin(i * 1.7) * 30)
+      out += `<g transform="translate(${x} ${y}) rotate(${i * 37})"><rect class="confetti" x="-5" y="-3" width="10" height="6" fill="${cols[i % 5] ?? '#ffd54a'}" style="animation-delay:${((i % 4) * 0.15).toFixed(2)}s"/></g>`
+    }
+    return out
+  }
+  if (mood === 'fright') {
+    return `<g class="bang" transform="translate(95 ${top + 10})"><rect x="-7" y="-50" width="14" height="38" rx="5" fill="#d52b1e"/><circle cx="0" cy="0" r="8" fill="#d52b1e"/></g>`
+  }
+  return ''
+}
+
+function snowman(y: YearState, percent: number, mood?: Mood): string {
   const s = stage(percent)
   const b = y.build
   const m = y.melt
@@ -410,18 +422,39 @@ function snowman(y: Jahreslauf, percent: number): string {
   if (b > 0.75) body += ball(-330, 48)
   let face = ''
   if (done) {
-    face = `<circle cx="0" cy="-245" r="7" class="coal"/><circle cx="0" cy="-215" r="7" class="coal"/><circle cx="0" cy="-185" r="7" class="coal"/>
-      <circle cx="-16" cy="-342" r="6" class="coal"/><circle cx="16" cy="-342" r="6" class="coal"/>
-      <path d="M0 -330 L44 -322 L0 -318 Z" fill="#e67e22"/>
-      <path d="M-20 -310 Q0 -298 20 -310" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <path d="M-62 -230 L-150 -290 M-120 -270 L-140 -300 M-120 -270 L-155 -265" class="stick"/>
-      <path d="M62 -230 L150 -280 M120 -262 L140 -292 M120 -262 L156 -262" class="stick"/>`
-    if (s.schal) face += scarf(-285)
-    if (s.besen) {
-      face += broom(158, -330, 10)
-      face += `<circle cx="-150" cy="-290" r="13" fill="${CFG.farben.faeustlinge}"/><circle cx="152" cy="-282" r="13" fill="${CFG.farben.faeustlinge}"/>`
+    const eyes =
+      mood === 'cheer'
+        ? `<path d="M-24 -340 Q-16 -352 -8 -340 M8 -340 Q16 -352 24 -340" stroke="#2b2b2b" stroke-width="5" fill="none" stroke-linecap="round"/>`
+        : mood === 'fright'
+          ? `<circle cx="-17" cy="-344" r="11" fill="#ffffff" stroke="#2b2b2b" stroke-width="3"/><circle cx="17" cy="-344" r="11" fill="#ffffff" stroke="#2b2b2b" stroke-width="3"/><circle cx="-17" cy="-344" r="4" class="coal"/><circle cx="17" cy="-344" r="4" class="coal"/>`
+          : `<circle cx="-16" cy="-342" r="6" class="coal"/><circle cx="16" cy="-342" r="6" class="coal"/>`
+    const mouth =
+      mood === 'cheer'
+        ? `<path d="M-24 -314 Q0 -286 24 -314 Z" fill="#2b2b2b"/><path d="M-12 -302 Q0 -294 12 -302" stroke="#e05a5a" stroke-width="4" fill="none" stroke-linecap="round"/>`
+        : mood === 'fright'
+          ? `<ellipse cx="0" cy="-306" rx="9" ry="12" fill="#2b2b2b"/>`
+          : `<path d="M-20 -310 Q0 -298 20 -310" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    // Where the hands are, by mood.
+    const hand = mood === 'cheer' ? { l: [-140, -380], r: [140, -380] } : mood === 'fright' ? { l: [-170, -248], r: [170, -248] } : { l: [-150, -290], r: [150, -280] }
+    const arm = (sx: number, end: number[]): string => {
+      const ex = end[0] ?? 0
+      const ey = end[1] ?? 0
+      const mx = sx + (ex - sx) * 0.65
+      const my = -230 + (ey + 230) * 0.65
+      return `<path d="M${sx} -230 L${ex} ${ey} M${mx} ${my} L${mx + (ex > 0 ? 18 : -18)} ${my - 26} M${mx} ${my} L${mx + (ex > 0 ? 30 : -30)} ${my + 6}" class="stick"/>`
     }
-    if (s.muetze) face += beanie(0, -366, m * 25)
+    face = `<circle cx="0" cy="-245" r="7" class="coal"/><circle cx="0" cy="-215" r="7" class="coal"/><circle cx="0" cy="-185" r="7" class="coal"/>
+      ${eyes}
+      <path d="M0 -330 L44 -322 L0 -318 Z" fill="#e67e22"/>
+      ${mouth}
+      ${arm(-62, hand.l)}${arm(62, hand.r)}`
+    if (s.scarf) face += scarf(-285)
+    if (s.broom) {
+      face += broom(mood === undefined ? 158 : 200, mood === undefined ? -330 : -300, 10)
+      face += `<circle cx="${hand.l[0]}" cy="${hand.l[1]}" r="13" fill="${CFG.colors.mittens}"/><circle cx="${hand.r[0]}" cy="${hand.r[1]}" r="13" fill="${CFG.colors.mittens}"/>`
+    }
+    if (s.hat) face += `<g class="${mood === 'fright' ? 'hatpop' : ''}">${beanie(0, -366, m * 25)}</g>`
+    face += moodMarks(mood, -440)
   }
   const puddle = m > 0 ? `<ellipse cx="0" cy="4" rx="${Math.round(110 + 120 * m)}" ry="${Math.round(10 + 14 * m)}" class="puddle"/>` : ''
   return `${puddle}<ellipse cx="0" cy="0" rx="120" ry="16" fill="#000000" opacity="0.08"/>
@@ -434,9 +467,9 @@ function remains(percent: number): string {
     <path d="M-40 -6 L10 -2 L-40 2 Z" fill="#e67e22"/>
     <circle cx="40" cy="-4" r="6" class="coal"/><circle cx="60" cy="0" r="6" class="coal"/><circle cx="-80" cy="-2" r="6" class="coal"/>
     <path d="M-150 -4 L-90 -20 M100 -2 L160 -24 M140 -16 L150 -34" class="stick"/>`
-  if (s.muetze) out += beanie(-110, -6, -70)
-  if (s.schal) out += `<path d="M20 -8 Q70 -26 130 -8 L126 4 Q70 -12 24 4 Z" fill="${CFG.farben.schal}"/>`
-  if (s.besen) out += `<g transform="rotate(-80 180 0)">${broom(180, -200, 0)}</g>`
+  if (s.hat) out += beanie(-110, -6, -70)
+  if (s.scarf) out += `<path d="M20 -8 Q70 -26 130 -8 L126 4 Q70 -12 24 4 Z" fill="${CFG.colors.scarf}"/>`
+  if (s.broom) out += `<g transform="rotate(-80 180 0)">${broom(180, -200, 0)}</g>`
   return out + flowers()
 }
 
@@ -451,7 +484,7 @@ function flowers(): string {
     .join('')
 }
 
-function scarecrow(percent: number): string {
+function scarecrow(percent: number, mood?: Mood): string {
   const s = stage(percent)
   let out = `<ellipse cx="0" cy="0" rx="110" ry="14" fill="#000000" opacity="0.08"/>
     <rect x="-7" y="-380" width="14" height="384" fill="#7a5230"/>
@@ -461,14 +494,15 @@ function scarecrow(percent: number): string {
     <path d="M-152 -292 l-18 -10 M-152 -284 l-20 4 M-152 -288 l-16 14 M152 -292 l18 -10 M152 -284 l20 4 M152 -288 l16 14" stroke="#d9b44a" stroke-width="4" stroke-linecap="round"/>
     <circle cx="0" cy="-340" r="46" fill="#d8b98a"/>
     <path d="M-20 -350 l10 10 M-10 -350 l-10 10 M10 -350 l10 10 M20 -350 l-10 10" stroke="#3a2a1a" stroke-width="4"/>
-    <path d="M-22 -318 Q0 -304 22 -318" stroke="#3a2a1a" stroke-width="3" fill="none" stroke-dasharray="5 4"/>`
-  if (s.schal) out += `<path d="M-40 -300 L40 -300 L0 -262 Z" fill="${CFG.farben.schal}"/><circle cx="-6" cy="-292" r="3" fill="#ffffff"/><circle cx="10" cy="-290" r="3" fill="#ffffff"/>`
-  if (s.muetze) out += `<ellipse cx="0" cy="-376" rx="80" ry="14" fill="#d9b44a"/><path d="M-40 -378 Q-38 -420 0 -422 Q38 -420 40 -378 Z" fill="#e3c25a"/><rect x="-40" y="-392" width="80" height="10" fill="${CFG.farben.muetze}"/>`
-  if (s.besen) out += `<g transform="translate(-120 -300)"><ellipse cx="0" cy="0" rx="18" ry="12" fill="#1f1f24"/><circle cx="14" cy="-12" r="9" fill="#1f1f24"/><path d="M22 -12 L32 -9 L22 -7 Z" fill="#e0a800"/><circle cx="16" cy="-14" r="2" fill="#ffffff"/><path d="M-16 2 L-30 8" stroke="#1f1f24" stroke-width="5"/></g>`
+    ${mood === 'fright' ? '<ellipse cx="0" cy="-314" rx="8" ry="11" fill="#3a2a1a"/>' : mood === 'cheer' ? '<path d="M-22 -320 Q0 -294 22 -320 Z" fill="#3a2a1a"/>' : '<path d="M-22 -318 Q0 -304 22 -318" stroke="#3a2a1a" stroke-width="3" fill="none" stroke-dasharray="5 4"/>'}`
+  if (s.scarf) out += `<path d="M-40 -300 L40 -300 L0 -262 Z" fill="${CFG.colors.scarf}"/><circle cx="-6" cy="-292" r="3" fill="#ffffff"/><circle cx="10" cy="-290" r="3" fill="#ffffff"/>`
+  if (s.hat) out += `<ellipse cx="0" cy="-376" rx="80" ry="14" fill="#d9b44a"/><path d="M-40 -378 Q-38 -420 0 -422 Q38 -420 40 -378 Z" fill="#e3c25a"/><rect x="-40" y="-392" width="80" height="10" fill="${CFG.colors.hat}"/>`
+  out += moodMarks(mood, -450)
+  if (s.broom) out += `<g transform="translate(-120 -300)"><ellipse cx="0" cy="0" rx="18" ry="12" fill="#1f1f24"/><circle cx="14" cy="-12" r="9" fill="#1f1f24"/><path d="M22 -12 L32 -9 L22 -7 Z" fill="#e0a800"/><circle cx="16" cy="-14" r="2" fill="#ffffff"/><path d="M-16 2 L-30 8" stroke="#1f1f24" stroke-width="5"/></g>`
   return out
 }
 
-function easter(): string {
+function easterDecor(): string {
   const eggs: [number, number, string, string][] = [
     [520, 900, '#ff8fb1', '#ffffff'], [610, 925, '#6bc5ff', '#ffd54a'], [760, 905, '#ffd54a', '#e67e22'],
     [900, 930, '#8cd17d', '#ffffff'], [1020, 900, '#b48cff', '#ffd54a'], [1110, 935, '#ff6b6b', '#ffffff'],
@@ -535,7 +569,7 @@ function presents(): string {
 
 export function buildScene(input: SceneInput): string {
   const p = clamp(input.percent, 0, 100)
-  const y = jahreslauf(input.date)
+  const y = yearState(input.date)
   const rand = seeded(7)
   const clicked = input.click !== undefined
   const gl = ground('light', y)
@@ -543,38 +577,38 @@ export function buildScene(input: SceneInput): string {
   const sky = SKY[input.weather]
 
   let figure: string
-  if (y.figure === 'schneemann') {
-    figure = snowman(y, p)
-  } else if (y.figure === 'reste') {
+  if (y.figure === 'snowman') {
+    figure = snowman(y, p, input.mood)
+  } else if (y.figure === 'remains') {
     figure = remains(p)
   } else {
-    figure = scarecrow(p)
+    figure = scarecrow(p, input.mood)
   }
-  const scale = clamp(CFG.figurGroesse, 0.6, 1.6).toFixed(2)
+  const scale = clamp(CFG.figureSize, 0.6, 1.6).toFixed(2)
 
   let extras = ''
   let sky2 = ''
-  if (y.anlass === 'ostern') extras += easter()
-  if (y.anlass === 'nationalfeiertag') {
+  if (y.occasion === 'easter') extras += easterDecor()
+  if (y.occasion === 'swissNationalDay') {
     extras += swissDay()
     sky2 += fireworks(['#d52b1e', '#ffffff', '#ff6b6b'], seeded(3))
   }
-  if (y.anlass === 'silvester' || y.anlass === 'neujahr') {
+  if (y.occasion === 'newYearsEve' || y.occasion === 'newYear') {
     sky2 += fireworks(['#ffd54a', '#6bc5ff', '#ff6b6b', '#8cff8c', '#ffffff'], seeded(5))
   }
-  if (y.anlass === 'weihnachten') extras += presents()
+  if (y.occasion === 'christmas') extras += presents()
 
-  const greeting = y.anlass === 'neujahr' ? `<text x="800" y="90" text-anchor="middle" class="greet">Es guets Neus!</text>` : ''
+  const greeting = y.occasion === 'newYear' ? `<text x="800" y="90" text-anchor="middle" class="greet">${escapeXml(t().newYearGreeting)}</text>` : ''
 
-  const label = escapeXml(input.modelLabel || 'Modell wird geladen')
-  const sub = escapeXml(`${Math.round(p)} % Kontext · ${y.anlass ? ANLASS_NAME[y.anlass] : y.season}`)
+  const label = escapeXml(input.modelLabel || t().loadingModel)
+  const sub = escapeXml(`${t().contextShare(Math.round(p))} · ${y.occasion ? t().occasions[y.occasion] : t().seasons[y.season]}`)
 
   const fog =
-    input.weather === 'nebel'
+    input.weather === 'fog'
       ? `<g class="fogs" filter="url(#soft)"><rect class="fog fog1" x="-400" y="520" width="2400" height="120" rx="60"/><rect class="fog fog2" x="-400" y="640" width="2400" height="140" rx="70"/><rect class="fog fog1" x="-400" y="400" width="2400" height="90" rx="45"/></g>`
       : ''
   const aurora =
-    input.weather === 'abendrot'
+    input.weather === 'sunset'
       ? `<g class="aurora"><path d="M-200 200 C 100 90 600 260 900 140 C 1150 50 1500 210 1800 120 L1800 230 C 1500 310 1150 150 900 240 C 600 360 100 190 -200 300 Z"/></g>`
       : ''
 
@@ -615,6 +649,11 @@ export function buildScene(input: SceneInput): string {
   .fireworks { opacity: 0.55; }
   .fog { fill: #ffffff; opacity: 0.55; } .fog1 { animation: drift 60s ease-in-out infinite alternate; } .fog2 { animation: drift 80s ease-in-out infinite alternate-reverse; }
   .aurora path { fill: url(#aur); opacity: 0; }
+  .hop { animation: hop 0.7s ease-out 4; }
+  .jolt { animation: jolt 1.2s ease-out 1; }
+  .hatpop { animation: hatpop 1.2s ease-out 1; }
+  .confetti { animation: confetti 2.4s ease-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .bang { animation: fadein 0.3s ease-out both; }
   .greet { font-family: sans-serif; font-size: 44px; font-weight: 700; fill: #c0392b; }
   .lbl { font-family: sans-serif; font-size: 22px; font-weight: 600; fill: #16324a; }
   .sub { font-family: sans-serif; font-size: 15px; fill: #3a5670; }
@@ -638,6 +677,10 @@ export function buildScene(input: SceneInput): string {
   @keyframes wave { 0%, 100% { transform: skewY(0deg); } 50% { transform: skewY(-4deg); } }
   @keyframes fire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(0.94, 1.08); } }
   @keyframes burst { 0% { opacity: 0; transform: scale(0.15); } 8% { opacity: 1; } 30% { opacity: 0.8; transform: scale(1); } 45% { opacity: 0; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.1); } }
+  @keyframes hop { 0%, 100% { transform: translate(0px, 0px); } 40% { transform: translate(0px, -46px); } 70% { transform: translate(0px, 0px) scale(1.04, 0.96); } }
+  @keyframes jolt { 0% { transform: translate(0px, 0px); } 12% { transform: translate(0px, -34px); } 24% { transform: translate(0px, 0px); } 36% { transform: translate(-6px, 0px); } 48% { transform: translate(6px, 0px); } 60% { transform: translate(-4px, 0px); } 72% { transform: translate(4px, 0px); } 100% { transform: translate(0px, 0px); } }
+  @keyframes hatpop { 0% { transform: translate(0px, 0px); } 18% { transform: translate(0px, -40px); } 40% { transform: translate(0px, -12px); } 100% { transform: translate(0px, -12px); } }
+  @keyframes confetti { 0% { transform: translate(0px, 0px) rotate(0deg); opacity: 1; } 100% { transform: translate(0px, 60px) rotate(300deg); opacity: 0.2; } }
   @keyframes drift { from { transform: translate(-120px, 0px); } to { transform: translate(120px, 0px); } }
   @media (prefers-color-scheme: dark) {
     .sky0 { stop-color: ${sky.dark[0]}; } .sky1 { stop-color: ${sky.dark[1]}; } .sky2 { stop-color: ${sky.dark[2]}; }
@@ -645,7 +688,7 @@ export function buildScene(input: SceneInput): string {
     .pine { fill: #1d3b36; } .pine2 { fill: #16302c; } .cap { fill: #c9d8e8; }
     .snowball { fill: #e8eef6; stroke: #9fb3c9; }
     .puddle { fill: #5f86a8; }
-    .stars { opacity: ${input.weather === 'klar' ? 0.8 : 0.3}; }
+    .stars { opacity: ${input.weather === 'clear' ? 0.8 : 0.3}; }
     .sun { opacity: 0; } .moon { opacity: 1; }
     .s { stroke: none; } .clump, .gs { stroke: none; }
     .fluff { fill: #fff7a8; stroke: none; }
@@ -669,19 +712,19 @@ export function buildScene(input: SceneInput): string {
 <rect width="1600" height="1000" fill="url(#sky)"/>
 ${stars(seeded(11))}
 ${aurora}
-<g ${input.weather === 'nebel' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>
+<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>
 ${sky2}
 ${greeting}
 <!-- hills -->
 <path class="far" d="M0 640 C 220 560 420 600 640 570 C 880 535 1100 600 1320 560 C 1450 540 1530 560 1600 575 L1600 1000 L0 1000 Z"/>
-${pines(y, y.anlass, clicked, seeded(21))}
+${pines(y, y.occasion, clicked, seeded(21))}
 <path class="near" d="M0 740 C 260 690 520 720 800 700 C 1080 680 1320 730 1600 705 L1600 1000 L0 1000 Z"/>
 <path class="ground" d="M0 840 C 300 815 700 835 1000 822 C 1250 812 1450 830 1600 825 L1600 1000 L0 1000 Z"/>
 ${fog}
 ${extras}
 <!-- figure, pinned bottom left -->
 <svg x="0" y="0" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMinYMax meet">
-  <g transform="translate(290 860) scale(${scale})">${figure}</g>
+  <g transform="translate(290 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>
 </svg>
 <!-- falling things -->
 <g>${particles(y, p, rand)}</g>

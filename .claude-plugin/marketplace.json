@@ -1,13 +1,13 @@
 {
   "name": "claude-background",
+  "description": "Backgrounds for the Claude app",
   "owner": {
     "name": "PurpleProgrammer"
   },
   "plugins": [
     {
-      "name": "winterlandschaft",
+      "name": "winter-landscape",
       "source": "./"
     }
-  ],
-  "description": "Hintergründe für die Claude-App"
+  ]
 }
