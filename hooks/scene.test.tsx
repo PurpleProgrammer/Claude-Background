@@ -65,6 +65,17 @@ test('a region can be chosen, and lists its occasions', async $ => {
   expect(JSON.stringify(await run('region auto'))).toContain('Region:')
 })
 
+test('a preview says how to end it, and the language can be switched', async $ => {
+  const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('summer'))).toContain('/backdrop reset goes back to today')
+  expect(JSON.stringify(await run('reset'))).not.toContain('Preview active')
+  expect(JSON.stringify(await run('sprache de'))).toContain('Sprache: Deutsch')
+  expect(JSON.stringify(await run('summer'))).toContain('/backdrop zurück kehrt zu heute zurück')
+  expect(JSON.stringify(await run('langue fr'))).toContain('Langue\u00a0: français')
+  expect(JSON.stringify(await run('language xx'))).toContain('/backdrop langue en|de|fr|it|es|auto')
+  expect(JSON.stringify(await run('language auto'))).toContain('Language: English')
+})
+
 test('German words work too', async $ => {
   const out = await $.command.run({ command: 'winter', args: 'ostern' } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(out)).toContain('Easter')

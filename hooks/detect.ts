@@ -97,14 +97,27 @@ function countriesOf(zone: string): string[] {
   return ZONES[zone]?.[0].split(',') ?? []
 }
 
-/** The zone whose own country (listed first) is this region, e.g. CH -> Europe/Zurich. */
+/**
+ * The main zone of countries with several, where the first zone in the table
+ * would be an outlying one (America/Adak for the US, Africa/Ceuta for Spain).
+ */
+const MAIN_ZONE: Record<string, string> = {
+  US: 'America/New_York', CA: 'America/Toronto', MX: 'America/Mexico_City', BR: 'America/Sao_Paulo',
+  AR: 'America/Argentina/Buenos_Aires', CL: 'America/Santiago', EC: 'America/Guayaquil', ES: 'Europe/Madrid',
+  PT: 'Europe/Lisbon', DE: 'Europe/Berlin', RU: 'Europe/Moscow', UA: 'Europe/Kyiv', AU: 'Australia/Sydney',
+  NZ: 'Pacific/Auckland', CN: 'Asia/Shanghai', ID: 'Asia/Jakarta', KZ: 'Asia/Almaty', MN: 'Asia/Ulaanbaatar',
+  CD: 'Africa/Kinshasa', GB: 'Europe/London', FR: 'Europe/Paris', DK: 'Europe/Copenhagen', NL: 'Europe/Amsterdam',
+}
+
+/** The zone the days are counted in for a region, e.g. CH -> Europe/Zurich, US -> America/New_York. */
 export function homeZone(region: string): string | undefined {
-  for (const [zone, [countries]] of Object.entries(ZONES)) {
-    if (countries.split(',')[0] === region) {
-      return zone
-    }
+  const main = MAIN_ZONE[region]
+  if (main && ZONES[main]) {
+    return main
   }
-  return undefined
+  // Otherwise the first zone whose own country this is, mainland zones before islands.
+  const own = Object.entries(ZONES).filter(([, [countries]]) => countries.split(',')[0] === region).map(([zone]) => zone)
+  return own.find(zone => !/^(Atlantic|Pacific|Indian)\//.test(zone)) ?? own[0]
 }
 
 export function resolveRegion(settings: RegionSettings, env: Environment): Resolved {

@@ -1,7 +1,7 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
 import { chooseRegion, occasionContext, region } from './context.js'
-import { helpFor, normalizeWord, resolveLanguage, t, WORDS, type CommandWord, type Language, type Season } from './i18n.js'
+import { chooseLanguage, currentLanguage, helpFor, LANGUAGES, languageName, normalizeWord, t, WORDS, type CommandWord, type Language, type Season } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
 import { dayNumber, isActive, nextOccasionStart, OCCASIONS } from './occasions.js'
@@ -282,6 +282,10 @@ function regionText(): string {
   return tx.regionLine(r.subdivision || r.region, how, r.timeZone, r.hemisphere)
 }
 
+function isPreviewing(): boolean {
+  return preview.date !== undefined || preview.weather !== undefined || preview.percent !== undefined || preview.occasion !== undefined
+}
+
 function describe(): string {
   const tx = t()
   const c = current()
@@ -297,7 +301,7 @@ function describe(): string {
     regionText(),
     `${tx.labels.falling}: ${tx.falling[fallingMode]}`,
     `${tx.labels.layout}: ${Math.round((layout?.figureX ?? SETTINGS.layout.figureX) * 100)} % / ${Math.round((layout?.moonX ?? SETTINGS.layout.moonX) * 100)} %`,
-  ].join('\n')
+  ].concat(isPreviewing() ? [tx.previewHint] : []).join('\n')
 }
 
 /** The occasions that apply here, each with its next date, soonest first. */
@@ -329,7 +333,7 @@ async function runCommand($: Command$, args: string): Promise<string> {
   const word = normalizeWord(first)
   const value = second === undefined ? undefined : normalizeWord(second)
   const command = COMMAND_WORDS[word]
-  const language = resolveLanguage(SETTINGS.language, region().env.locale)
+  const language = currentLanguage()
 
   switch (command) {
     case 'help':
@@ -395,6 +399,18 @@ async function runCommand($: Command$, args: string): Promise<string> {
     }
     case 'occasions':
       return occasionList()
+    case 'language': {
+      const choice = value ?? ''
+      if (choice !== 'auto' && !(LANGUAGES as readonly string[]).includes(choice)) {
+        return tx.languageUsage
+      }
+      chooseLanguage(choice === 'auto' ? undefined : choice)
+      await (choice === 'auto' ? $.store.delete('language') : $.store.set('language', choice)).catch(() => undefined)
+      $.ui.invalidate('ui.render')
+      // Answer in the new language.
+      const now = currentLanguage()
+      return t(now).languageSet(languageName(now, now))
+    }
     case 'figure':
     case 'moon':
     case 'layout': {
@@ -448,6 +464,10 @@ export const register: Register = on => {
       const stored = await $.store.get('fallingMode')
       if (stored === 'always' || stored === 'burst' || stored === 'freeze' || stored === 'off') {
         fallingMode = stored
+      }
+      const storedLanguage = await $.store.get('language')
+      if (typeof storedLanguage === 'string' && (LANGUAGES as readonly string[]).includes(storedLanguage)) {
+        chooseLanguage(storedLanguage)
       }
       const storedRegion = await $.store.get('region')
       if (typeof storedRegion === 'string' && storedRegion !== '') {

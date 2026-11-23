@@ -54,3 +54,11 @@ test('locale regions are read with and without a script part', () => {
   expect(localeRegion('zh-Hant-TW')).toBe('TW')
   expect(localeRegion('fr')).toBe('')
 })
+
+test('countries with several zones count the days in their main zone', () => {
+  expect(homeZone('US')).toBe('America/New_York')
+  expect(homeZone('ES')).toBe('Europe/Madrid')
+  expect(homeZone('PT')).toBe('Europe/Lisbon')
+  expect(homeZone('CH')).toBe('Europe/Zurich')
+  expect(homeZone('JP')).toBe('Asia/Tokyo')
+})

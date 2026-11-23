@@ -78,9 +78,9 @@ export type Occasion =
 export type Language = 'en' | 'de' | 'fr' | 'it' | 'es'
 export const LANGUAGES: readonly Language[] = ['en', 'de', 'fr', 'it', 'es']
 
-export type CommandWord = 'date' | 'weather' | 'context' | 'reset' | 'help' | 'falling' | 'figure' | 'moon' | 'layout' | 'region' | 'occasions' | 'cheer' | 'fright'
+export type CommandWord = 'date' | 'weather' | 'context' | 'reset' | 'help' | 'falling' | 'figure' | 'moon' | 'layout' | 'region' | 'occasions' | 'cheer' | 'fright' | 'language'
 
-type HelpText = Record<'title' | 'show' | 'seasonOrOccasion' | 'date' | 'weather' | 'context' | 'moods' | 'falling' | 'place' | 'layout' | 'region' | 'occasions' | 'reset' | 'help' | 'more', string>
+type HelpText = Record<'title' | 'show' | 'seasonOrOccasion' | 'date' | 'weather' | 'context' | 'moods' | 'falling' | 'place' | 'layout' | 'region' | 'occasions' | 'language' | 'reset' | 'help' | 'more', string>
 
 type Texts = {
   locale: string
@@ -110,6 +110,9 @@ type Texts = {
   previewEnded: string
   dateUsage: string
   unknown: (args: string) => string
+  previewHint: string
+  languageSet: (name: string) => string
+  languageUsage: string
   cheer: string
   fright: string
 }
@@ -212,7 +215,7 @@ const EN: Texts = {
   newYearGreeting: "Happy New Year!",
   alt: (season, p, model) => `Landscape (${season}), context ${percent("en", p)} full, model ${model}`,
   commandDescription: "Interactive background: preview seasons, occasions, weather, context and moods",
-  helpText: {"title": "Interactive background (/backdrop or /winter):", "show": "show the current state", "seasonOrOccasion": "preview a season or occasion, e.g.", "date": "any date", "weather": "weather", "context": "simulate how full the context is", "moods": "let the figure cheer or get a fright", "falling": "fall always, for a few seconds then clear, for a few seconds then freeze, or never", "place": "move the figure or the moon (percent of the window width)", "layout": "back to the positions in the settings", "region": "another country's occasions, or detect it again", "occasions": "the occasions here with their next date", "reset": "end all previews", "help": "this help", "more": "Words in English, German, French, Italian and Spanish all work."},
+  helpText: {"title": "Interactive background (/backdrop or /winter):", "show": "show the current state", "seasonOrOccasion": "preview a season or occasion, e.g.", "date": "any date", "weather": "weather", "context": "simulate how full the context is", "moods": "let the figure cheer or get a fright", "falling": "fall always, for a few seconds then clear, for a few seconds then freeze, or never", "place": "move the figure or the moon (percent of the window width)", "layout": "back to the positions in the settings", "region": "another country's occasions, or detect it again", "occasions": "the occasions here with their next date", "reset": "end all previews", "language": "language of the texts, or auto", "help": "this help", "more": "Words in English, German, French, Italian and Spanish all work."},
   date: (y, m, d) => formatDate("en", y, m, d),
   labels: {"date": "Date", "season": "Season", "occasion": "Occasion", "model": "Model", "weather": "Weather", "context": "Context", "accessories": "Accessories", "falling": "Falling", "layout": "Layout"},
   preview: "(preview)",
@@ -220,6 +223,9 @@ const EN: Texts = {
   previewEnded: "Preview ended.",
   dateUsage: "Usage: /backdrop date 2027-03-20",
   unknown: args => `Unknown: "${args}".`,
+  previewHint: "Preview active: /backdrop reset goes back to today.",
+  languageSet: name => `Language: ${name}. Remembered for your next sessions.`,
+  languageUsage: "Usage: /backdrop language en|de|fr|it|es|auto",
   cheer: "The figure cheers.",
   fright: "The figure gets a fright.",
 }
@@ -304,7 +310,7 @@ const DE: Texts = {
   newYearGreeting: "Frohes neues Jahr!",
   alt: (season, p, model) => `Landschaft (${season}), Kontext zu ${percent("de", p)} gefüllt, Modell ${model}`,
   commandDescription: "Interaktiver Hintergrund: Vorschau von Jahreszeiten, Anlässen, Wetter, Kontext und Stimmungen",
-  helpText: {"title": "Interaktiver Hintergrund (/backdrop oder /winter):", "show": "zeigt den aktuellen Zustand", "seasonOrOccasion": "Jahreszeit oder Anlass ansehen, z. B.", "date": "beliebiges Datum", "weather": "Wetter", "context": "Kontext-Füllstand simulieren", "moods": "Figur jubeln oder erschrecken lassen", "falling": "immer, ein paar Sekunden und dann klar, ein paar Sekunden und dann eingefroren, oder nie", "place": "Figur oder Mond verschieben (Prozent der Fensterbreite)", "layout": "zurück zu den Positionen aus den Einstellungen", "region": "Anlässe eines anderen Landes zeigen oder wieder erkennen", "occasions": "die Anlässe hier mit ihrem nächsten Datum", "reset": "alle Vorschauen beenden", "help": "diese Hilfe", "more": "Wörter auf Englisch, Deutsch, Französisch, Italienisch und Spanisch funktionieren alle."},
+  helpText: {"title": "Interaktiver Hintergrund (/backdrop oder /winter):", "show": "zeigt den aktuellen Zustand", "seasonOrOccasion": "Jahreszeit oder Anlass ansehen, z. B.", "date": "beliebiges Datum", "weather": "Wetter", "context": "Kontext-Füllstand simulieren", "moods": "Figur jubeln oder erschrecken lassen", "falling": "immer, ein paar Sekunden und dann klar, ein paar Sekunden und dann eingefroren, oder nie", "place": "Figur oder Mond verschieben (Prozent der Fensterbreite)", "layout": "zurück zu den Positionen aus den Einstellungen", "region": "Anlässe eines anderen Landes zeigen oder wieder erkennen", "occasions": "die Anlässe hier mit ihrem nächsten Datum", "reset": "alle Vorschauen beenden", "language": "Sprache der Texte, oder auto", "help": "diese Hilfe", "more": "Wörter auf Englisch, Deutsch, Französisch, Italienisch und Spanisch funktionieren alle."},
   date: (y, m, d) => formatDate("de", y, m, d),
   labels: {"date": "Datum", "season": "Jahreszeit", "occasion": "Anlass", "model": "Modell", "weather": "Wetter", "context": "Kontext", "accessories": "Accessoires", "falling": "Fallen", "layout": "Anordnung"},
   preview: "(Vorschau)",
@@ -312,6 +318,9 @@ const DE: Texts = {
   previewEnded: "Vorschau beendet.",
   dateUsage: "Bitte so: /backdrop datum 2027-03-20",
   unknown: args => `Unbekannt: «${args}».`,
+  previewHint: "Vorschau aktiv: /backdrop zurück kehrt zu heute zurück.",
+  languageSet: name => `Sprache: ${name}. Wird für die nächsten Sitzungen gemerkt.`,
+  languageUsage: "Bitte so: /backdrop sprache en|de|fr|it|es|auto",
   cheer: "Die Figur jubelt.",
   fright: "Die Figur erschrickt.",
 }
@@ -396,7 +405,7 @@ const FR: Texts = {
   newYearGreeting: "Bonne année !",
   alt: (season, p, model) => `Paysage (${season}), contexte rempli à ${percent("fr", p)}, modèle ${model}`,
   commandDescription: "Arrière-plan interactif : aperçu des saisons, des fêtes, de la météo, du contexte et des humeurs",
-  helpText: {"title": "Arrière-plan interactif (/backdrop ou /winter) :", "show": "affiche l’état actuel", "seasonOrOccasion": "aperçu d’une saison ou d’une fête, p. ex.", "date": "une date au choix", "weather": "météo", "context": "simuler le remplissage du contexte", "moods": "faire exulter ou sursauter le personnage", "falling": "en continu, quelques secondes puis ciel dégagé, quelques secondes puis figé, ou jamais", "place": "déplacer le personnage ou la lune (pourcentage de la largeur de la fenêtre)", "layout": "revenir aux positions des réglages", "region": "les fêtes d’un autre pays, ou nouvelle détection", "occasions": "les fêtes d’ici avec leur prochaine date", "reset": "terminer tous les aperçus", "help": "cette aide", "more": "Les mots en anglais, allemand, français, italien et espagnol fonctionnent tous."},
+  helpText: {"title": "Arrière-plan interactif (/backdrop ou /winter) :", "show": "affiche l’état actuel", "seasonOrOccasion": "aperçu d’une saison ou d’une fête, p. ex.", "date": "une date au choix", "weather": "météo", "context": "simuler le remplissage du contexte", "moods": "faire exulter ou sursauter le personnage", "falling": "en continu, quelques secondes puis ciel dégagé, quelques secondes puis figé, ou jamais", "place": "déplacer le personnage ou la lune (pourcentage de la largeur de la fenêtre)", "layout": "revenir aux positions des réglages", "region": "les fêtes d’un autre pays, ou nouvelle détection", "occasions": "les fêtes d’ici avec leur prochaine date", "reset": "terminer tous les aperçus", "language": "langue des textes, ou auto", "help": "cette aide", "more": "Les mots en anglais, allemand, français, italien et espagnol fonctionnent tous."},
   date: (y, m, d) => formatDate("fr", y, m, d),
   labels: {"date": "Date", "season": "Saison", "occasion": "Fête", "model": "Modèle", "weather": "Météo", "context": "Contexte", "accessories": "Accessoires", "falling": "Chute", "layout": "Disposition"},
   preview: "(aperçu)",
@@ -404,6 +413,9 @@ const FR: Texts = {
   previewEnded: "Aperçu terminé.",
   dateUsage: "Utilisation : /backdrop date 2027-03-20",
   unknown: args => `Inconnu : « ${args} ».`,
+  previewHint: "Aperçu actif : /backdrop réinitialiser revient à aujourd’hui.",
+  languageSet: name => `Langue : ${name}. Réglage mémorisé pour les prochaines sessions.`,
+  languageUsage: "Utilisation : /backdrop langue en|de|fr|it|es|auto",
   cheer: "Le personnage exulte.",
   fright: "Le personnage sursaute.",
 }
@@ -488,7 +500,7 @@ const IT: Texts = {
   newYearGreeting: "Buon anno!",
   alt: (season, p, model) => `Paesaggio (${season}), contesto pieno al ${percent("it", p)}, modello ${model}`,
   commandDescription: "Sfondo interattivo: anteprima di stagioni, ricorrenze, meteo, contesto e stati d’animo",
-  helpText: {"title": "Sfondo interattivo (/backdrop o /winter):", "show": "mostra lo stato attuale", "seasonOrOccasion": "anteprima di una stagione o ricorrenza, ad es.", "date": "una data qualsiasi", "weather": "meteo", "context": "simulare il riempimento del contesto", "moods": "far esultare o spaventare il personaggio", "falling": "sempre, qualche secondo e poi sereno, qualche secondo e poi fermo, oppure mai", "place": "spostare il personaggio o la luna (percentuale della larghezza della finestra)", "layout": "tornare alle posizioni delle impostazioni", "region": "le ricorrenze di un altro paese, o nuovo rilevamento", "occasions": "le ricorrenze di qui con la prossima data", "reset": "terminare tutte le anteprime", "help": "questo aiuto", "more": "Funzionano le parole in inglese, tedesco, francese, italiano e spagnolo."},
+  helpText: {"title": "Sfondo interattivo (/backdrop o /winter):", "show": "mostra lo stato attuale", "seasonOrOccasion": "anteprima di una stagione o ricorrenza, ad es.", "date": "una data qualsiasi", "weather": "meteo", "context": "simulare il riempimento del contesto", "moods": "far esultare o spaventare il personaggio", "falling": "sempre, qualche secondo e poi sereno, qualche secondo e poi fermo, oppure mai", "place": "spostare il personaggio o la luna (percentuale della larghezza della finestra)", "layout": "tornare alle posizioni delle impostazioni", "region": "le ricorrenze di un altro paese, o nuovo rilevamento", "occasions": "le ricorrenze di qui con la prossima data", "reset": "terminare tutte le anteprime", "language": "lingua dei testi, oppure auto", "help": "questo aiuto", "more": "Funzionano le parole in inglese, tedesco, francese, italiano e spagnolo."},
   date: (y, m, d) => formatDate("it", y, m, d),
   labels: {"date": "Data", "season": "Stagione", "occasion": "Ricorrenza", "model": "Modello", "weather": "Meteo", "context": "Contesto", "accessories": "Accessori", "falling": "Caduta", "layout": "Disposizione"},
   preview: "(anteprima)",
@@ -496,6 +508,9 @@ const IT: Texts = {
   previewEnded: "Anteprima terminata.",
   dateUsage: "Uso: /backdrop data 2027-03-20",
   unknown: args => `Sconosciuto: «${args}».`,
+  previewHint: "Anteprima attiva: /backdrop ripristina torna a oggi.",
+  languageSet: name => `Lingua: ${name}. Impostazione memorizzata per le prossime sessioni.`,
+  languageUsage: "Uso: /backdrop lingua en|de|fr|it|es|auto",
   cheer: "Il personaggio esulta.",
   fright: "Il personaggio si spaventa.",
 }
@@ -580,7 +595,7 @@ const ES: Texts = {
   newYearGreeting: "¡Feliz Año Nuevo!",
   alt: (season, p, model) => `Paisaje (${season}), contexto lleno al ${percent("es", p)}, modelo ${model}`,
   commandDescription: "Fondo interactivo: vista previa de estaciones, fiestas, tiempo, contexto y estados de ánimo",
-  helpText: {"title": "Fondo interactivo (/backdrop o /winter):", "show": "muestra el estado actual", "seasonOrOccasion": "vista previa de una estación o fiesta, p. ej.", "date": "cualquier fecha", "weather": "tiempo", "context": "simular cuánto se ha llenado el contexto", "moods": "hacer que la figura lo celebre o se asuste", "falling": "siempre, unos segundos y luego despejado, unos segundos y luego quieto, o nunca", "place": "mover la figura o la luna (porcentaje del ancho de la ventana)", "layout": "volver a las posiciones de los ajustes", "region": "las fiestas de otro país, o volver a detectarlo", "occasions": "las fiestas de aquí con su próxima fecha", "reset": "terminar todas las vistas previas", "help": "esta ayuda", "more": "Funcionan las palabras en inglés, alemán, francés, italiano y español."},
+  helpText: {"title": "Fondo interactivo (/backdrop o /winter):", "show": "muestra el estado actual", "seasonOrOccasion": "vista previa de una estación o fiesta, p. ej.", "date": "cualquier fecha", "weather": "tiempo", "context": "simular cuánto se ha llenado el contexto", "moods": "hacer que la figura lo celebre o se asuste", "falling": "siempre, unos segundos y luego despejado, unos segundos y luego quieto, o nunca", "place": "mover la figura o la luna (porcentaje del ancho de la ventana)", "layout": "volver a las posiciones de los ajustes", "region": "las fiestas de otro país, o volver a detectarlo", "occasions": "las fiestas de aquí con su próxima fecha", "reset": "terminar todas las vistas previas", "language": "idioma de los textos, o auto", "help": "esta ayuda", "more": "Funcionan las palabras en inglés, alemán, francés, italiano y español."},
   date: (y, m, d) => formatDate("es", y, m, d),
   labels: {"date": "Fecha", "season": "Estación", "occasion": "Fiesta", "model": "Modelo", "weather": "Tiempo", "context": "Contexto", "accessories": "Accesorios", "falling": "Caída", "layout": "Disposición"},
   preview: "(vista previa)",
@@ -588,6 +603,9 @@ const ES: Texts = {
   previewEnded: "Vista previa terminada.",
   dateUsage: "Uso: /backdrop fecha 2027-03-20",
   unknown: args => `Desconocido: «${args}».`,
+  previewHint: "Vista previa activa: /backdrop restablecer vuelve a hoy.",
+  languageSet: name => `Idioma: ${name}. Se recordará en tus próximas sesiones.`,
+  languageUsage: "Uso: /backdrop idioma en|de|fr|it|es|auto",
   cheer: "La figura lo celebra.",
   fright: "La figura se asusta.",
 }
@@ -608,10 +626,31 @@ export function resolveLanguage(setting: string, locale: string): Language {
   return (LANGUAGES as readonly string[]).includes(lang) ? (lang as Language) : 'en'
 }
 
+let languageChoice: string | undefined
+
+/** Use a language chosen with /backdrop (undefined goes back to the setting). */
+export function chooseLanguage(choice: string | undefined): void {
+  languageChoice = choice
+}
+
+/** The language in use: a choice made with /backdrop, else the setting. */
+export function currentLanguage(): Language {
+  return resolveLanguage(languageChoice ?? SETTINGS.language, region().env.locale)
+}
+
+/** A language's name in the language of the texts, e.g. 'fr' -> 'Französisch'. */
+export function languageName(code: Language, inLanguage: Language): string {
+  try {
+    return new Intl.DisplayNames([inLanguage], { type: 'language' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
 const cache = new Map<string, Texts>()
 
 /** The texts in the language of the settings, with the region's variants. */
-export function t(language: Language = resolveLanguage(SETTINGS.language, region().env.locale)): Texts {
+export function t(language: Language = currentLanguage()): Texts {
   const key = `${language}-${region().region}`
   const known = cache.get(key)
   if (known) {
@@ -644,35 +683,35 @@ export type Words = {
 
 export const WORDS: Record<Language, Words> = {
   en: {
-    commands: {"date": ["date"], "weather": ["weather"], "context": ["context"], "reset": ["reset"], "help": ["help"], "falling": ["falling"], "figure": ["figure"], "moon": ["moon"], "layout": ["layout"], "region": ["region"], "occasions": ["occasions"], "cheer": ["cheer"], "fright": ["fright"]},
+    commands: {"date": ["date"], "weather": ["weather"], "context": ["context"], "reset": ["reset"], "help": ["help"], "falling": ["falling"], "figure": ["figure"], "moon": ["moon"], "layout": ["layout"], "region": ["region"], "occasions": ["occasions"], "cheer": ["cheer"], "fright": ["fright"], "language": ["language"]},
     weather: {"clear": ["clear"], "sunset": ["sunset"], "fog": ["fog"], "magic": ["magic"]},
     falling: {"always": ["always"], "burst": ["burst", "short"], "freeze": ["freeze"], "off": ["off"]},
     seasons: {"winter": ["winter"], "firstSnow": ["firstsnow"], "thaw": ["thaw"], "spring": ["spring"], "summer": ["summer"], "autumn": ["autumn", "fall"]},
     occasions: {"valentinesDay": ["valentine"], "sechselaeuten": ["boeoegg"], "labourDay": ["laborday", "mayday"], "pentecost": ["whitsun"], "swissNationalDay": ["nationalday", "august1"], "stNicholas": ["nicholas"], "stPatricksDay": ["stpatrick"], "stLucia": ["lucia"], "kingsDay": ["koningsdag"], "independenceDayUS": ["independenceday", "fourthofjuly", "july4"], "constitutionDayNO": ["syttendemai"], "guyFawkesNight": ["bonfirenight"], "dayOfTheDead": ["diademuertos"], "childrensDay": ["kodomonohi"], "hanami": ["cherryblossom"], "lunarNewYear": ["chinesenewyear"], "midAutumn": ["mooncake"], "eidAlFitr": ["eid"], "hanukkah": ["chanukah"], "diwali": ["deepavali"], "vesak": ["wesak"]},
   },
   de: {
-    commands: {"date": ["datum"], "weather": ["wetter"], "context": ["kontext"], "reset": ["zurück"], "help": ["hilfe"], "falling": ["fallen"], "figure": ["figur"], "moon": ["mond"], "layout": ["anordnung"], "region": ["region"], "occasions": ["anlässe"], "cheer": ["jubel"], "fright": ["schreck"]},
+    commands: {"date": ["datum"], "weather": ["wetter"], "context": ["kontext"], "reset": ["zurück"], "help": ["hilfe"], "falling": ["fallen"], "figure": ["figur"], "moon": ["mond"], "layout": ["anordnung"], "region": ["region"], "occasions": ["anlässe"], "cheer": ["jubel"], "fright": ["schreck"], "language": ["sprache"]},
     weather: {"clear": ["klar"], "sunset": ["abendrot"], "fog": ["nebel"], "magic": ["zauber"]},
     falling: {"always": ["immer"], "burst": ["kurz"], "freeze": ["einfrieren", "stopp"], "off": ["aus"]},
     seasons: {"winter": ["winter"], "firstSnow": ["ersterschnee"], "thaw": ["tauwetter", "schmelze"], "spring": ["frühling"], "summer": ["sommer"], "autumn": ["herbst"]},
     occasions: {"valentinesDay": ["valentinstag"], "carnival": ["fasnacht", "fasching", "karneval"], "womensDay": ["tagderfrau", "frauentag"], "easter": ["ostern"], "orthodoxEaster": ["orthodoxeostern"], "sechselaeuten": ["sechseläuten", "böögg"], "labourDay": ["tagderarbeit"], "mothersDay": ["muttertag"], "fathersDay": ["vatertag"], "ascension": ["auffahrt", "himmelfahrt"], "pentecost": ["pfingsten"], "solstice": ["sonnenwende", "sommersonnenwende"], "midsummer": ["mittsommer"], "swissNationalDay": ["nationalfeiertag", "bundesfeier"], "stNicholas": ["nikolaus", "samichlaus"], "christmas": ["weihnachten"], "boxingDay": ["stephanstag"], "newYearsEve": ["silvester"], "newYear": ["neujahr"], "epiphany": ["dreikönigstag", "dreikönige"], "stMartin": ["martinstag", "martini"], "stLucia": ["luciafest"], "germanUnityDay": ["tagderdeutscheneinheit"], "kingsDay": ["königstag", "koenigstag"], "independenceDayUS": ["unabhängigkeitstag"], "dayOfTheDead": ["tagdertoten"], "childrensDay": ["kindertag"], "hanami": ["kirschblüte"], "lunarNewYear": ["chinesischesneujahr"], "midAutumn": ["mondfest"], "nowruz": ["nouruz"], "eidAlFitr": ["zuckerfest"], "eidAlAdha": ["opferfest"], "hanukkah": ["chanukka"], "vesak": ["vesakh"], "thanksgiving": ["erntedank"]},
   },
   fr: {
-    commands: {"date": ["date"], "weather": ["météo"], "context": ["contexte"], "reset": ["réinitialiser"], "help": ["aide"], "falling": ["chute"], "figure": ["personnage"], "moon": ["lune"], "layout": ["disposition"], "region": ["région"], "occasions": ["fêtes"], "cheer": ["joie"], "fright": ["frayeur"]},
+    commands: {"date": ["date"], "weather": ["météo"], "context": ["contexte"], "reset": ["réinitialiser"], "help": ["aide"], "falling": ["chute"], "figure": ["personnage"], "moon": ["lune"], "layout": ["disposition"], "region": ["région"], "occasions": ["fêtes"], "cheer": ["joie"], "fright": ["frayeur"], "language": ["langue"]},
     weather: {"clear": ["dégagé"], "sunset": ["crépuscule"], "fog": ["brouillard"], "magic": ["magie"]},
     falling: {"always": ["continu"], "burst": ["bref"], "freeze": ["figer"], "off": ["arrêt"]},
     seasons: {"winter": ["hiver"], "firstSnow": ["premièresneiges"], "thaw": ["dégel"], "spring": ["printemps"], "summer": ["été"], "autumn": ["automne"]},
     occasions: {"valentinesDay": ["saintvalentin"], "carnival": ["carnaval"], "womensDay": ["journéedesfemmes"], "easter": ["pâques"], "orthodoxEaster": ["pâquesorthodoxe"], "labourDay": ["fêtedutravail"], "mothersDay": ["fêtedesmères"], "fathersDay": ["fêtedespères"], "pentecost": ["pentecôte"], "solstice": ["solstice"], "swissNationalDay": ["fêtenationale", "premieraoût"], "stNicholas": ["saintnicolas"], "advent": ["avent"], "christmas": ["noël"], "newYearsEve": ["saintsylvestre", "réveillon"], "newYear": ["nouvelan"], "epiphany": ["épiphanie", "fêtedesrois"], "stPatricksDay": ["saintpatrick"], "stMartin": ["saintmartin"], "stLucia": ["saintelucie"], "bastilleDay": ["quatorzejuillet"], "kingsDay": ["fêteduroi"], "dayOfTheDead": ["jourdesmorts"], "lunarNewYear": ["nouvelanlunaire"], "midAutumn": ["miautomne"], "nowruz": ["norouz"], "eidAlFitr": ["aïd", "aïdelfitr"], "eidAlAdha": ["aïdelkébir"], "hanukkah": ["hanoukka"], "thanksgiving": ["actiondegrâce"]},
   },
   it: {
-    commands: {"date": ["data"], "weather": ["meteo"], "context": ["contesto"], "reset": ["ripristina"], "help": ["aiuto"], "falling": ["caduta"], "figure": ["personaggio"], "moon": ["luna"], "layout": ["disposizione"], "region": ["regione"], "occasions": ["ricorrenze"], "cheer": ["gioia"], "fright": ["spavento"]},
+    commands: {"date": ["data"], "weather": ["meteo"], "context": ["contesto"], "reset": ["ripristina"], "help": ["aiuto"], "falling": ["caduta"], "figure": ["personaggio"], "moon": ["luna"], "layout": ["disposizione"], "region": ["regione"], "occasions": ["ricorrenze"], "cheer": ["gioia"], "fright": ["spavento"], "language": ["lingua"]},
     weather: {"clear": ["sereno"], "sunset": ["tramonto"], "fog": ["nebbia"], "magic": ["magia"]},
     falling: {"always": ["sempre"], "burst": ["breve"], "freeze": ["ferma"], "off": ["spenta"]},
     seasons: {"winter": ["inverno"], "firstSnow": ["primaneve"], "thaw": ["disgelo"], "spring": ["primavera"], "summer": ["estate"], "autumn": ["autunno"]},
     occasions: {"valentinesDay": ["sanvalentino"], "carnival": ["carnevale"], "womensDay": ["festadelladonna"], "easter": ["pasqua"], "orthodoxEaster": ["pasquaortodossa"], "labourDay": ["primomaggio", "festadeilavoratori"], "mothersDay": ["festadellamamma"], "fathersDay": ["festadelpapà"], "ascension": ["ascensione"], "pentecost": ["pentecoste"], "solstice": ["solstizio"], "swissNationalDay": ["festanazionale", "primoagosto"], "stNicholas": ["sannicola", "sannicolao"], "advent": ["avvento"], "christmas": ["natale"], "newYearsEve": ["sansilvestro"], "newYear": ["capodanno"], "epiphany": ["epifania", "befana"], "stPatricksDay": ["sanpatrizio"], "stMartin": ["sanmartino"], "stLucia": ["santalucia"], "italianRepublicDay": ["festadellarepubblica"], "dayOfTheDead": ["giornodeimorti"], "lunarNewYear": ["capodannolunare"], "midAutumn": ["metàautunno"], "thanksgiving": ["ringraziamento"]},
   },
   es: {
-    commands: {"date": ["fecha"], "weather": ["tiempo"], "context": ["contexto"], "reset": ["restablecer"], "help": ["ayuda"], "falling": ["caída"], "figure": ["figura"], "moon": ["luna"], "layout": ["disposición"], "region": ["región"], "occasions": ["fiestas"], "cheer": ["alegría"], "fright": ["susto"]},
+    commands: {"date": ["fecha"], "weather": ["tiempo"], "context": ["contexto"], "reset": ["restablecer"], "help": ["ayuda"], "falling": ["caída"], "figure": ["figura"], "moon": ["luna"], "layout": ["disposición"], "region": ["región"], "occasions": ["fiestas"], "cheer": ["alegría"], "fright": ["susto"], "language": ["idioma"]},
     weather: {"clear": ["despejado"], "sunset": ["atardecer"], "fog": ["niebla"], "magic": ["magia"]},
     falling: {"always": ["siempre"], "burst": ["breve"], "freeze": ["congelar"], "off": ["apagado"]},
     seasons: {"winter": ["invierno"], "firstSnow": ["primeranevada"], "thaw": ["deshielo"], "spring": ["primavera"], "summer": ["verano"], "autumn": ["otoño"]},
@@ -706,6 +745,7 @@ export function helpFor(language: Language): string {
     [`/backdrop ${c('layout')} ${c('reset')}`, h.layout],
     [`/backdrop ${c('region')} DE | auto`, h.region],
     [`/backdrop ${c('occasions')}`, h.occasions],
+    [`/backdrop ${c('language')} fr | auto`, h.language],
     [`/backdrop ${c('reset')}`, h.reset],
     [`/backdrop ${c('help')}`, h.help],
   ]

@@ -1,0 +1,50 @@
+# Changelog
+
+All notable changes to Interactive Background for Claude.
+
+## 0.8.0
+
+- `/backdrop language fr` switches the language of the texts and remembers it; `auto` follows the system again
+- `/backdrop` reminds you how to end a preview while one is on
+- A country chosen by hand counts its days in its main time zone (America/New_York for the US, not America/Adak)
+- The gallery shows occasions from many countries; Hanukkah and Kwanzaa candles are larger
+
+## 0.7.0
+
+- Regions: the mod detects the country from the system's time zone and locale, without network access; settings `region`, `subdivision`, `timeZone`, `hemisphere`, `snow` and `extraOccasions`; `/backdrop region` and `/backdrop occasions`
+- Around 60 occasions from many countries and cultures, as data in `hooks/occasions.ts`, with dates from Intl calendars and sourced tables
+- Seasons mirror in the southern hemisphere; `snow: false` for places without snow
+- Five languages: English, German, French, Italian and Spanish, with regional variants and Intl date and number formats
+- Switzerland keeps exactly its former occasions, checked day by day
+
+## 0.6.0
+
+- Falling mode `freeze`: things stop in mid-air at the frame they reached
+- `/backdrop figure` and `/backdrop moon` move them and remember it
+
+## 0.5.0
+
+- Figure and moon stand beside the conversation, as a share of the window width
+- Falling modes `always`, `burst` and `off`
+- The command is `/backdrop` (`/background` is built into the app)
+
+## 0.4.0
+
+- Renamed to Interactive Background for Claude
+- Seven more occasions (Valentine's Day, carnival, Sechseläuten, Mother's Day, Ascension, midsummer, St Nicholas) and costumes for the figure
+- New gallery and hero GIF
+
+## 0.3.0
+
+- Fable gets its own weather; International Women's Day, Labour Day, Pentecost and Halloween
+- The label is pinned to a top corner in screen pixels
+
+## 0.2.0
+
+- Code, settings and docs in English, German as the second language
+- The figure cheers after passing tests and gets a fright after errors
+- MIT license
+
+## 0.1.0
+
+- Winter landscape: snowfall and a snowman that follow the context, the model shown in the scene, clicks, seasons with transitions, occasions and a settings file

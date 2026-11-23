@@ -276,7 +276,7 @@ function hanukkah(dayIndex: number): DecorResult {
     const branch = i < 4 ? 8 - i : 8 - (i - 1) // light from the right, one more each evening
     out += candle(x, helper ? 880 : 900, '#6bc5ff', helper ? 44 : 34, helper || branch <= lit)
   }
-  return { ground: out }
+  return { ground: `<g transform="translate(790 905) scale(1.8) translate(-790 -905)">${out}</g>` }
 }
 
 function diwali(): DecorResult {
@@ -315,7 +315,7 @@ function kwanzaa(): DecorResult {
   colors.forEach((c, i) => {
     out += candle(705 + i * 33, 900, c, 34)
   })
-  return { ground: out }
+  return { ground: `<g transform="translate(805 905) scale(1.7) translate(-805 -905)">${out}</g>` }
 }
 
 /** Decorations for occasions this file draws; undefined for the ones the scene draws itself. */

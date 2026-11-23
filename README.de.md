@@ -115,7 +115,7 @@ Daten, die `Intl` nicht berechnen kann, stammen aus veröffentlichten Kalendern,
 
 ## Sprachen
 
-Setze `language` in [`hooks/settings.ts`](hooks/settings.ts) auf `'en'`, `'de'`, `'fr'`, `'it'`, `'es'`, oder auf `'auto'` für die Sprache deines Systems. Namen, die sich je nach Land unterscheiden, sind berücksichtigt (zum Beispiel „Labor Day“ in den USA, „Fête nationale“ in der Romandie). Eine weitere Sprache ist als Pull Request willkommen: ein weiteres `Texts`-Objekt und seine Wörter in `WORDS`.
+Setze `language` in [`hooks/settings.ts`](hooks/settings.ts) auf `'en'`, `'de'`, `'fr'`, `'it'`, `'es'`, oder auf `'auto'` für die Sprache deines Systems, oder wechsle sie mit `/backdrop sprache de`. Namen, die sich je nach Land unterscheiden, sind berücksichtigt (zum Beispiel „Labor Day“ in den USA, „Fête nationale“ in der Romandie). Eine weitere Sprache ist als Pull Request willkommen: ein weiteres `Texts`-Objekt und seine Wörter in `WORDS`.
 
 ## Befehle
 
@@ -135,7 +135,8 @@ Setze `language` in [`hooks/settings.ts`](hooks/settings.ts) auf `'en'`, `'de'`,
 | `/backdrop figur 20` · `/backdrop mond 85` | Figur oder Mond verschieben (Prozent der Fensterbreite); `/backdrop anordnung zurück` stellt die Einstellungen wieder her |
 | `/backdrop region DE` · `/backdrop region auto` | Anlässe eines anderen Landes zeigen und merken, oder wieder erkennen |
 | `/backdrop anlässe` | die Anlässe deiner Region mit ihrem nächsten Datum |
-| `/backdrop zurück` | Vorschau beenden |
+| `/backdrop sprache fr` · `/backdrop sprache auto` | Sprache der Texte wechseln und merken, oder wieder dem System folgen |
+| `/backdrop zurück` | Vorschau beenden und zu heute zurückkehren (`/backdrop` erinnert dich daran, solange eine Vorschau läuft) |
 | `/backdrop hilfe` | die Hilfe, in deiner Sprache |
 
 ## Anpassen
@@ -148,7 +149,9 @@ Bei jedem Push und Pull Request führt GitHub Actions `claude plugin validate .`
 
 Die Zeitzonen-Tabelle `hooks/zones.ts` wird mit `node scripts/make-zones.mjs` aus der IANA-Datenbank erzeugt.
 
-**Offener Punkt:** `docs/images/occasions.png` zeigt noch nur die Schweizer Anlässe und sollte mit den neuen neu erzeugt werden.
+## Änderungen
+
+Was sich in jeder Version geändert hat: [CHANGELOG.md](CHANGELOG.md) (auf Englisch).
 
 ## Herkunft
 

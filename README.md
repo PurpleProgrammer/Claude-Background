@@ -113,7 +113,7 @@ Dates that `Intl` cannot compute come from published calendars, with the source 
 
 ## Languages
 
-Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'fr'`, `'it'`, `'es'`, or `'auto'` for the language of your system. Names that differ by country are handled too (for example “Labor Day” in the US, “Fête nationale” in French-speaking Switzerland). Another language is welcome as a pull request: one more `Texts` object and its words in `WORDS`.
+Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'fr'`, `'it'`, `'es'`, or `'auto'` for the language of your system, or switch it with `/backdrop language de`. Names that differ by country are handled too (for example “Labor Day” in the US, “Fête nationale” in French-speaking Switzerland). Another language is welcome as a pull request: one more `Texts` object and its words in `WORDS`.
 
 ## Commands
 
@@ -133,7 +133,8 @@ Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'
 | `/backdrop figure 20` · `/backdrop moon 85` | move the figure or the moon (percent of the window width); `/backdrop layout reset` goes back to the settings |
 | `/backdrop region DE` · `/backdrop region auto` | show another country's occasions and remember it, or detect it again |
 | `/backdrop occasions` | list the occasions of your region with their next date |
-| `/backdrop reset` | end all previews |
+| `/backdrop language fr` · `/backdrop language auto` | switch the language of the texts and remember it, or follow the system again |
+| `/backdrop reset` | end all previews and go back to today (`/backdrop` reminds you while a preview is on) |
 | `/backdrop help` | the help, in your language |
 
 ## Customising
@@ -146,7 +147,9 @@ Every push and pull request runs `claude plugin validate .` and `claude plugin t
 
 The time zone table `hooks/zones.ts` is generated from the IANA database with `node scripts/make-zones.mjs`.
 
-**Open point:** `docs/images/occasions.png` still shows only the Swiss occasions and should be rendered again with the new ones.
+## Changes
+
+What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 
