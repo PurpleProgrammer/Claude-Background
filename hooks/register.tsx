@@ -1,7 +1,7 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
 import { chooseRegion, occasionContext, region } from './context.js'
-import { normalizeWord, t, WORDS, type Season } from './i18n.js'
+import { helpFor, normalizeWord, resolveLanguage, t, WORDS, type CommandWord, type Language, type Season } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
 import { dayNumber, isActive, nextOccasionStart, OCCASIONS } from './occasions.js'
@@ -181,7 +181,10 @@ function occasionAlias(words: string[], o: Occasion): void {
   }
 }
 
-// Every language's words for seasons and occasions, accents optional.
+// Every occasion by its id, then every language's words for seasons and occasions, accents optional.
+for (const def of OCCASIONS) {
+  occasionAlias([normalizeWord(def.id)], def.id)
+}
 for (const words of Object.values(WORDS)) {
   for (const [season, list] of Object.entries(words.seasons) as [Season, string[]][]) {
     alias(list.map(normalizeWord), SEASON_PREVIEW[season])
@@ -191,29 +194,21 @@ for (const words of Object.values(WORDS)) {
   }
 }
 
-const WEATHER_WORDS: Record<string, Weather> = {
-  clear: 'clear',
-  klar: 'clear',
-  sunset: 'sunset',
-  abendrot: 'sunset',
-  fog: 'fog',
-  nebel: 'fog',
-  magic: 'magic',
-  zauber: 'magic',
+/** Every language's words for one table of WORDS, normalized, pointing to their meaning. */
+function lookup<K extends string>(pick: (w: (typeof WORDS)[Language]) => Record<K, string[]>): Record<string, K> {
+  const out: Record<string, K> = {}
+  for (const words of Object.values(WORDS)) {
+    for (const [meaning, list] of Object.entries(pick(words)) as [K, string[]][]) {
+      for (const word of [meaning, ...list]) {
+        out[normalizeWord(word)] = meaning
+      }
+    }
+  }
+  return out
 }
-const MOOD_WORDS: Record<string, Mood> = { cheer: 'cheer', jubel: 'cheer', fright: 'fright', schreck: 'fright' }
-const FALLING_WORDS: Record<string, FallingMode> = {
-  always: 'always',
-  immer: 'always',
-  burst: 'burst',
-  short: 'burst',
-  kurz: 'burst',
-  freeze: 'freeze',
-  einfrieren: 'freeze',
-  stopp: 'freeze',
-  off: 'off',
-  aus: 'off',
-}
+const COMMAND_WORDS = lookup<CommandWord>(w => w.commands)
+const WEATHER_WORDS = lookup<Weather>(w => w.weather)
+const FALLING_WORDS = lookup<FallingMode>(w => w.falling)
 
 type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }
 
@@ -318,46 +313,124 @@ function occasionList(): string {
   return rows.length > 0 ? [tx.occasionsHeader(r.subdivision || r.region), ...rows].join('\n') : tx.occasionsNone
 }
 
-function applyArgs(args: string): string {
+type Command$ = Session$ &
+  Clock$ & {
+    store: { set: (key: string, value: unknown) => Promise<void>; delete: (key: string) => Promise<void> }
+  }
+
+/** What /backdrop (and /winter) answer; the words come from WORDS in any language. */
+async function runCommand($: Command$, args: string): Promise<string> {
   const tx = t()
-  const [cmd, value] = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  if (cmd === undefined) {
+  await refresh($)
+  const [first, second] = args.trim().split(/\s+/).filter(Boolean)
+  if (first === undefined) {
     return describe()
   }
-  if (cmd === 'help' || cmd === 'hilfe') {
-    return tx.help
-  }
-  if (cmd === 'reset' || cmd === 'zurück' || cmd === 'zurueck') {
-    delete preview.date
-    delete preview.weather
-    delete preview.percent
-    delete preview.occasion
-    return `${tx.previewEnded}\n${describe()}`
-  }
-  if ((cmd === 'date' || cmd === 'datum') && value !== undefined) {
-    const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value)
-    if (m === null) {
-      return tx.dateUsage
+  const word = normalizeWord(first)
+  const value = second === undefined ? undefined : normalizeWord(second)
+  const command = COMMAND_WORDS[word]
+  const language = resolveLanguage(SETTINGS.language, region().env.locale)
+
+  switch (command) {
+    case 'help':
+      return helpFor(language)
+    case 'reset':
+      delete preview.date
+      delete preview.weather
+      delete preview.percent
+      delete preview.occasion
+      stir($)
+      $.ui.invalidate('ui.render')
+      return `${tx.previewEnded}\n${describe()}`
+    case 'date': {
+      const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(second ?? '')
+      if (m === null) {
+        return tx.dateUsage
+      }
+      preview.date = { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) }
+      delete preview.occasion
+      break
     }
-    preview.date = { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) }
-    delete preview.occasion
-    return describe()
+    case 'weather': {
+      const weather = value === undefined ? undefined : WEATHER_WORDS[value]
+      if (weather === undefined) {
+        return helpFor(language)
+      }
+      preview.weather = weather
+      break
+    }
+    case 'context':
+      if (second === undefined || Number.isNaN(Number(second))) {
+        return helpFor(language)
+      }
+      preview.percent = Math.max(0, Math.min(100, Number(second)))
+      break
+    case 'cheer':
+    case 'fright':
+      feel($, command)
+      return command === 'cheer' ? tx.cheer : tx.fright
+    case 'falling': {
+      const mode = value === undefined ? undefined : FALLING_WORDS[value]
+      if (mode === undefined) {
+        return helpFor(language)
+      }
+      fallingMode = mode
+      await $.store.set('fallingMode', fallingMode).catch(() => undefined)
+      falling = true
+      stir($)
+      $.ui.invalidate('ui.render')
+      return tx.fallingSet(tx.falling[fallingMode])
+    }
+    case 'region': {
+      const choice = value ?? ''
+      if (choice !== 'auto' && !/^[a-z]{2}(-[a-z0-9]{1,3})?$/.test(choice)) {
+        return tx.regionUsage
+      }
+      chooseRegion(choice === 'auto' ? undefined : choice)
+      await (choice === 'auto' ? $.store.delete('region') : $.store.set('region', choice.toUpperCase())).catch(() => undefined)
+      await refresh($)
+      stir($)
+      $.ui.invalidate('ui.render')
+      return regionText()
+    }
+    case 'occasions':
+      return occasionList()
+    case 'figure':
+    case 'moon':
+    case 'layout': {
+      if (command === 'layout') {
+        if (value === undefined || COMMAND_WORDS[value] !== 'reset') {
+          return tx.layoutUsage
+        }
+        layout = undefined
+        await $.store.delete('layout').catch(() => undefined)
+        $.ui.invalidate('ui.render')
+        return tx.layoutSet(Math.round(SETTINGS.layout.figureX * 100), Math.round(SETTINGS.layout.moonX * 100))
+      }
+      const share = Number(second)
+      if (second === undefined || Number.isNaN(share)) {
+        return tx.layoutUsage
+      }
+      const nextLayout = { figureX: layout?.figureX ?? SETTINGS.layout.figureX, moonX: layout?.moonX ?? SETTINGS.layout.moonX }
+      nextLayout[command === 'figure' ? 'figureX' : 'moonX'] = Math.max(0, Math.min(100, share)) / 100
+      layout = nextLayout
+      await $.store.set('layout', layout).catch(() => undefined)
+      $.ui.invalidate('ui.render')
+      return tx.layoutSet(Math.round(layout.figureX * 100), Math.round(layout.moonX * 100))
+    }
+    default: {
+      // A season or an occasion to preview.
+      const season = PREVIEW_DATES[word]
+      if (season === undefined) {
+        return `${tx.unknown(args.trim())}\n\n${helpFor(language)}`
+      }
+      preview.date = season(today.y)
+      preview.occasion = PREVIEW_OCCASIONS[word]
+    }
   }
-  if ((cmd === 'weather' || cmd === 'wetter') && value !== undefined && WEATHER_WORDS[value] !== undefined) {
-    preview.weather = WEATHER_WORDS[value]
-    return describe()
-  }
-  if ((cmd === 'context' || cmd === 'kontext') && value !== undefined && !Number.isNaN(Number(value))) {
-    preview.percent = Math.max(0, Math.min(100, Number(value)))
-    return describe()
-  }
-  const season = PREVIEW_DATES[normalizeWord(cmd)]
-  if (season !== undefined) {
-    preview.date = season(today.y)
-    preview.occasion = PREVIEW_OCCASIONS[normalizeWord(cmd)]
-    return describe()
-  }
-  return `${tx.unknown(args.trim())}\n\n${tx.help}`
+  stir($)
+  $.ui.invalidate('ui.render')
+  return describe()
 }
 
 export const register: Register = on => {
@@ -409,124 +482,9 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'winter' }, async ($, e) => {
-    await refresh($)
-    const words = e.args.trim().toLowerCase().split(/\s+/)
-    if ((words[0] === 'falling' || words[0] === 'fallen') && words[1] !== undefined && FALLING_WORDS[words[1]] !== undefined) {
-      fallingMode = FALLING_WORDS[words[1]] ?? fallingMode
-      await $.store.set('fallingMode', fallingMode).catch(() => undefined)
-      falling = true
-      stir($)
-      $.ui.invalidate('ui.render')
-      return { text: t().fallingSet(t().falling[fallingMode]) }
-    }
-    if (words[0] === 'region') {
-      const choice = words[1] ?? ''
-      if (choice !== 'auto' && !/^[a-z]{2}(-[a-z0-9]{1,3})?$/.test(choice)) {
-        return { text: t().regionUsage }
-      }
-      chooseRegion(choice === 'auto' ? undefined : choice)
-      await (choice === 'auto' ? $.store.delete('region') : $.store.set('region', choice.toUpperCase())).catch(() => undefined)
-      await refresh($)
-      stir($)
-      $.ui.invalidate('ui.render')
-      return { text: regionText() }
-    }
-    if (['occasions', 'anlässe', 'anlaesse', 'anlasse'].includes(words[0] ?? '')) {
-      await refresh($)
-      return { text: occasionList() }
-    }
-    const placeWord = words[0] ?? ''
-    if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
-      const tx = t()
-      if ((placeWord === 'layout' || placeWord === 'anordnung') && ['reset', 'zurück', 'zurueck'].includes(words[1] ?? '')) {
-        layout = undefined
-        await $.store.delete('layout').catch(() => undefined)
-        $.ui.invalidate('ui.render')
-        return { text: tx.layoutSet(Math.round(SETTINGS.layout.figureX * 100), Math.round(SETTINGS.layout.moonX * 100)) }
-      }
-      const value = Number(words[1])
-      if (placeWord === 'layout' || placeWord === 'anordnung' || words[1] === undefined || Number.isNaN(value)) {
-        return { text: tx.layoutUsage }
-      }
-      const share = Math.max(0, Math.min(100, value)) / 100
-      const nextLayout = { figureX: layout?.figureX ?? SETTINGS.layout.figureX, moonX: layout?.moonX ?? SETTINGS.layout.moonX }
-      if (placeWord === 'figure' || placeWord === 'figur') nextLayout.figureX = share
-      else nextLayout.moonX = share
-      layout = nextLayout
-      await $.store.set('layout', layout).catch(() => undefined)
-      $.ui.invalidate('ui.render')
-      return { text: tx.layoutSet(Math.round(layout.figureX * 100), Math.round(layout.moonX * 100)) }
-    }
-    const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
-    if (asMood !== undefined) {
-      feel($, asMood)
-      return { text: asMood === 'cheer' ? t().cheer : t().fright }
-    }
-    const text = applyArgs(e.args)
-    stir($)
-    $.ui.invalidate('ui.render')
-    return { text }
-  })
-  on('command.run', { command: 'backdrop' }, async ($, e) => {
-    await refresh($)
-    const words = e.args.trim().toLowerCase().split(/\s+/)
-    if ((words[0] === 'falling' || words[0] === 'fallen') && words[1] !== undefined && FALLING_WORDS[words[1]] !== undefined) {
-      fallingMode = FALLING_WORDS[words[1]] ?? fallingMode
-      await $.store.set('fallingMode', fallingMode).catch(() => undefined)
-      falling = true
-      stir($)
-      $.ui.invalidate('ui.render')
-      return { text: t().fallingSet(t().falling[fallingMode]) }
-    }
-    if (words[0] === 'region') {
-      const choice = words[1] ?? ''
-      if (choice !== 'auto' && !/^[a-z]{2}(-[a-z0-9]{1,3})?$/.test(choice)) {
-        return { text: t().regionUsage }
-      }
-      chooseRegion(choice === 'auto' ? undefined : choice)
-      await (choice === 'auto' ? $.store.delete('region') : $.store.set('region', choice.toUpperCase())).catch(() => undefined)
-      await refresh($)
-      stir($)
-      $.ui.invalidate('ui.render')
-      return { text: regionText() }
-    }
-    if (['occasions', 'anlässe', 'anlaesse', 'anlasse'].includes(words[0] ?? '')) {
-      await refresh($)
-      return { text: occasionList() }
-    }
-    const placeWord = words[0] ?? ''
-    if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
-      const tx = t()
-      if ((placeWord === 'layout' || placeWord === 'anordnung') && ['reset', 'zurück', 'zurueck'].includes(words[1] ?? '')) {
-        layout = undefined
-        await $.store.delete('layout').catch(() => undefined)
-        $.ui.invalidate('ui.render')
-        return { text: tx.layoutSet(Math.round(SETTINGS.layout.figureX * 100), Math.round(SETTINGS.layout.moonX * 100)) }
-      }
-      const value = Number(words[1])
-      if (placeWord === 'layout' || placeWord === 'anordnung' || words[1] === undefined || Number.isNaN(value)) {
-        return { text: tx.layoutUsage }
-      }
-      const share = Math.max(0, Math.min(100, value)) / 100
-      const nextLayout = { figureX: layout?.figureX ?? SETTINGS.layout.figureX, moonX: layout?.moonX ?? SETTINGS.layout.moonX }
-      if (placeWord === 'figure' || placeWord === 'figur') nextLayout.figureX = share
-      else nextLayout.moonX = share
-      layout = nextLayout
-      await $.store.set('layout', layout).catch(() => undefined)
-      $.ui.invalidate('ui.render')
-      return { text: tx.layoutSet(Math.round(layout.figureX * 100), Math.round(layout.moonX * 100)) }
-    }
-    const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
-    if (asMood !== undefined) {
-      feel($, asMood)
-      return { text: asMood === 'cheer' ? t().cheer : t().fright }
-    }
-    const text = applyArgs(e.args)
-    stir($)
-    $.ui.invalidate('ui.render')
-    return { text }
-  })
+  for (const command of ['backdrop', 'winter']) {
+    on('command.run', { command }, async ($, e) => ({ text: await runCommand($, e.args) })).catch(() => ({ text: 'interactive-background: this command failed.' }))
+  }
 
   // The context fill moved: redraw when anything changed.
   on('session.measure', async ($, e, next) => {

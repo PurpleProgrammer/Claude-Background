@@ -18,6 +18,7 @@ test('the backdrop draws the scene and /winter previews an occasion', async $ =>
 
 test('new occasions and Fable weather can be previewed', async $ => {
   const run = (args: string) => $.command.run({ command: 'winter', args } as Parameters<typeof $.command.run>[0])
+  await run('region ch')
   expect(JSON.stringify(await run('halloween'))).toContain('Halloween')
   expect(JSON.stringify(await run('pentecost'))).toContain('Pentecost')
   expect(JSON.stringify(await run('labourday'))).toContain('Labour Day')
@@ -54,7 +55,7 @@ test('a region can be chosen, and lists its occasions', async $ => {
   const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(await run('region us'))).toContain('Region: US (set)')
   const list = JSON.stringify(await run('occasions'))
-  for (const name of ['Independence Day', 'Thanksgiving', 'Labour Day', 'Halloween', 'Christmas']) {
+  for (const name of ['Independence Day', 'Thanksgiving', 'Labor Day', 'Halloween', 'Christmas']) {
     expect(list).toContain(name)
   }
   for (const name of ['Sechseläuten', 'Ascension Day', 'Swiss National Day', 'Pentecost']) {

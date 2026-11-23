@@ -22,12 +22,13 @@ export type Hemisphere = 'north' | 'south'
  */
 export type FallingMode = 'always' | 'burst' | 'freeze' | 'off'
 
-/** Languages of the texts in the scene and of the /winter command: 'en' or 'de'. */
-export type Language = 'en' | 'de'
 
 export const SETTINGS = {
-  /** Language of the label in the scene and the /winter replies. */
-  language: 'en' as Language,
+  /**
+   * Language of the label in the scene and of the /backdrop replies: 'en', 'de',
+   * 'fr', 'it', 'es', or 'auto' for the language of the system's locale.
+   */
+  language: 'en' as 'auto' | 'en' | 'de' | 'fr' | 'it' | 'es',
 
   /**
    * Where the model and context label sits: 'top-right' or 'top-left', and how
