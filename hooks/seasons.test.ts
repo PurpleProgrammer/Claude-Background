@@ -25,3 +25,16 @@ test('the northern hemisphere keeps its seasons', () => {
   expect(yearState({ y: 2027, m: 7, d: 20 }).season).toBe('summer')
   chooseRegion(undefined)
 })
+
+test('the mountains draw an ibex that climbs with the context', () => {
+  chooseRegion('CH', { locale: 'de-CH', timeZone: 'Europe/Zurich' })
+  const low = buildScene({ percent: 0, modelLabel: 'Opus 5.5', weather: 'clear', date: { y: 2027, m: 7, d: 10 }, landscape: 'mountains' })
+  const high = buildScene({ percent: 100, modelLabel: 'Opus 5.5', weather: 'clear', date: { y: 2027, m: 7, d: 10 }, landscape: 'mountains' })
+  expect(low).toContain('class="horn"')
+  expect(low).not.toContain('class="snowball"')
+  expect(low).toContain('<g transform="translate(0 0)">')
+  expect(high).toContain('<g transform="translate(0 -150)">')
+  // Alpenglühen with the sunset weather.
+  expect(buildScene({ percent: 50, modelLabel: 'Sonnet 5.5', weather: 'sunset', date: { y: 2027, m: 1, d: 20 }, landscape: 'mountains' })).toContain('#ffd2bd')
+  chooseRegion(undefined)
+})

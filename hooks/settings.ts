@@ -13,6 +13,9 @@
 /** Weather types: 'clear', 'sunset', 'fog' or 'magic'. */
 export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
 
+/** The landscapes: the winter landscape with its snowman, or the Alps with an ibex. */
+export type LandscapeId = 'winter' | 'mountains'
+
 /** Hemispheres, for the seasons. */
 export type Hemisphere = 'north' | 'south'
 
@@ -29,6 +32,14 @@ export const SETTINGS = {
    * 'fr', 'it', 'es', or 'auto' for the language of the system's locale.
    */
   language: 'en' as 'auto' | 'en' | 'de' | 'fr' | 'it' | 'es',
+
+  /**
+   * Which landscape is drawn: 'winter' (hills, fir trees and a snowman that
+   * becomes a scarecrow in summer) or 'mountains' (the Alps, with an ibex that
+   * climbs its rock as the context fills). "/backdrop landscape mountains"
+   * switches and remembers it.
+   */
+  landscape: 'winter' as LandscapeId,
 
   /**
    * Where the model and context label sits: 'above-figure' (centred just above

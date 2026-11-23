@@ -6,7 +6,7 @@ import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
 import { dayNumber, isActive, nextOccasionStart, OCCASIONS } from './occasions.js'
 import { buildScene, yearState, type DateParts, type Mood } from './scene.js'
-import { SETTINGS, type FallingMode, type Weather } from './settings.js'
+import { SETTINGS, type FallingMode, type LandscapeId, type Weather } from './settings.js'
 
 const SCENE = 'winter'
 
@@ -55,6 +55,8 @@ let clickSeq = 0
 let mood: Mood | undefined
 let moodSeq = 0
 let fallingMode: FallingMode = SETTINGS.falling.mode
+// A landscape chosen with /backdrop landscape, else the setting.
+let landscape: LandscapeId = SETTINGS.landscape
 let falling = true
 let fallSeq = 0
 // Seconds the flakes have fallen in earlier bursts, so a new burst goes on from the frozen frame.
@@ -209,6 +211,7 @@ function lookup<K extends string>(pick: (w: (typeof WORDS)[Language]) => Record<
 const COMMAND_WORDS = lookup<CommandWord>(w => w.commands)
 const WEATHER_WORDS = lookup<Weather>(w => w.weather)
 const FALLING_WORDS = lookup<FallingMode>(w => w.falling)
+const LANDSCAPE_WORDS = lookup<LandscapeId>(w => w.landscapes)
 
 type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }
 
@@ -291,13 +294,14 @@ function describe(): string {
   const c = current()
   const y = yearState(c.date, c.occasion)
   const st = SETTINGS.stages
-  const acc = [c.p >= st.hat && tx.accessories.hat, c.p >= st.scarf && tx.accessories.scarf, c.p >= st.broom && tx.accessories.broom].filter(Boolean)
+  const acc = [c.p >= st.hat && tx.accessories.hat, c.p >= st.scarf && tx.accessories.scarf, c.p >= st.broom && (landscape === 'mountains' ? tx.backpack : tx.accessories.broom)].filter(Boolean)
   const mark = (on: boolean): string => (on ? ` ${tx.preview}` : '')
   return [
     `${tx.labels.date}: ${tx.date(c.date.y, c.date.m, c.date.d)}${mark(preview.date !== undefined)}`,
     `${tx.labels.season}: ${tx.seasons[y.season]}${y.occasion ? ` · ${tx.labels.occasion}: ${tx.occasions[y.occasion]}` : ''}`,
     `${tx.labels.model}: ${prettyModel(modelId) || tx.unknownModel} · ${tx.labels.weather}: ${tx.weather[c.weather]}${mark(preview.weather !== undefined)}`,
     `${tx.labels.context}: ${tx.contextShare(Math.round(c.p))}${mark(preview.percent !== undefined)} · ${tx.labels.accessories}: ${acc.length > 0 ? acc.join(', ') : tx.accessories.none}`,
+    `${tx.labels.landscape}: ${tx.landscapes[landscape]}`,
     regionText(),
     `${tx.labels.falling}: ${tx.falling[fallingMode]}`,
     `${tx.labels.layout}: ${Math.round((layout?.figureX ?? SETTINGS.layout.figureX) * 100)} % / ${Math.round((layout?.moonX ?? SETTINGS.layout.moonX) * 100)} %`,
@@ -399,6 +403,17 @@ async function runCommand($: Command$, args: string): Promise<string> {
     }
     case 'occasions':
       return occasionList()
+    case 'landscape': {
+      const choice = value === undefined ? undefined : LANDSCAPE_WORDS[value]
+      if (choice === undefined) {
+        return tx.landscapeUsage
+      }
+      landscape = choice
+      await $.store.set('landscape', landscape).catch(() => undefined)
+      stir($)
+      $.ui.invalidate('ui.render')
+      return tx.landscapeSet(tx.landscapes[landscape])
+    }
     case 'language': {
       const choice = value ?? ''
       if (choice !== 'auto' && !(LANGUAGES as readonly string[]).includes(choice)) {
@@ -464,6 +479,10 @@ export const register: Register = on => {
       const stored = await $.store.get('fallingMode')
       if (stored === 'always' || stored === 'burst' || stored === 'freeze' || stored === 'off') {
         fallingMode = stored
+      }
+      const storedLandscape = await $.store.get('landscape')
+      if (storedLandscape === 'winter' || storedLandscape === 'mountains') {
+        landscape = storedLandscape
       }
       const storedLanguage = await $.store.get('language')
       if (typeof storedLanguage === 'string' && (LANGUAGES as readonly string[]).includes(storedLanguage)) {
@@ -569,7 +588,7 @@ export const register: Register = on => {
 
     return (
       <Svg
-        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, fall: fallFor(), layout, click, mood })}
+        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, fall: fallFor(), layout, landscape, click, mood })}
         alt={t().alt(t().seasons[y.season], Math.round(c.p), model)}
         isInteractive
       />

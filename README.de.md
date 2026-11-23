@@ -14,6 +14,7 @@ Ein lebendiger Hintergrund für die Claude-App (Desktop und Mobil): eine schlich
 - **Klick auf den Hintergrund:** Gestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
 - **Jahreszeiten mit Übergängen:** Im November wird der Schneemann gebaut, im März schmilzt er. Im Frühling blühen Blumen, im Sommer und Herbst steht eine Vogelscheuche. Auf der Südhalbkugel laufen die Jahreszeiten gespiegelt.
 - **Anlässe und Verkleidungen:** rund 60 Anlässe aus vielen Ländern und Kulturen, jeder mit eigener Deko, und für viele verkleidet sich die Figur.
+- **Zwei Landschaften:** die Winterlandschaft mit dem Schneemann, oder die Alpen mit einem Steinbock, der mit dem Kontext seinen Felsen hinaufklettert (`/backdrop landschaft berge`).
 - **Fünf Sprachen:** Englisch, Deutsch, Französisch, Italienisch und Spanisch.
 
 ## Galerie
@@ -21,6 +22,10 @@ Ein lebendiger Hintergrund für die Claude-App (Desktop und Mobil): eine schlich
 **Jahreszeiten und Wetter je Modell**
 
 ![Winter, Tauwetter, Frühling, Sommer, Herbst und eine Fable-Winternacht](docs/images/seasons.png)
+
+**Die Berge: ein Steinbock, der mit dem Kontext klettert, Alpenglühen, Nebelmeer, Höhenfeuer auf den Gipfeln**
+
+![Die Berglandschaft im Winter, im Sommer, im Alpenglühen, mit Nebelmeer, am 1. August und an Weihnachten](docs/images/mountains.png)
 
 **Anlässe und Verkleidungen**
 
@@ -135,13 +140,14 @@ Setze `language` in [`hooks/settings.ts`](hooks/settings.ts) auf `'en'`, `'de'`,
 | `/backdrop figur 20` · `/backdrop mond 85` | Figur oder Mond verschieben (Prozent der Fensterbreite); `/backdrop anordnung zurück` stellt die Einstellungen wieder her |
 | `/backdrop region DE` · `/backdrop region auto` | Anlässe eines anderen Landes zeigen und merken, oder wieder erkennen |
 | `/backdrop anlässe` | die Anlässe deiner Region mit ihrem nächsten Datum |
+| `/backdrop landschaft berge` · `/backdrop landschaft winterlandschaft` | zwischen den Alpen mit dem Steinbock und der Winterlandschaft wechseln und merken |
 | `/backdrop sprache fr` · `/backdrop sprache auto` | Sprache der Texte wechseln und merken, oder wieder dem System folgen |
 | `/backdrop zurück` | Vorschau beenden und zu heute zurückkehren (`/backdrop` erinnert dich daran, solange eine Vorschau läuft) |
 | `/backdrop hilfe` | die Hilfe, in deiner Sprache |
 
 ## Anpassen
 
-Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Sprache, Position der Anzeige (über der Figur oder in einer oberen Ecke), Anordnung, Fall-Modus, Regionen (siehe oben), Verkleidungen, Anzahl Tannen und Grösse der Figur, Farben der Accessoires, Kontext-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und der Kalender für ersten Schnee und Tauwetter.
+Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Landschaft, Sprache, Position der Anzeige (über der Figur oder in einer oberen Ecke), Anordnung, Fall-Modus, Regionen (siehe oben), Verkleidungen, Anzahl Tannen und Grösse der Figur, Farben der Accessoires, Kontext-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und der Kalender für ersten Schnee und Tauwetter.
 
 ## Entwicklung
 

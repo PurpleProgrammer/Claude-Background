@@ -14,6 +14,7 @@ A living background for the Claude app (desktop and mobile): a simple landscape 
 - **Click the background:** a flurry, snow falls off the fir trees, and the moon or sun smiles.
 - **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn. In the southern hemisphere the seasons are mirrored.
 - **Occasions and costumes:** around 60 occasions from many countries and cultures, each with its own decoration, and the figure dresses up for many of them.
+- **Two landscapes:** the winter landscape with its snowman, or the Alps with an ibex that climbs its rock as the context fills (`/backdrop landscape mountains`).
 - **Five languages:** English, German, French, Italian and Spanish.
 
 ## Gallery
@@ -21,6 +22,10 @@ A living background for the Claude app (desktop and mobile): a simple landscape 
 **Seasons and weather per model**
 
 ![Winter, thaw, spring, summer, autumn and a Fable winter night](docs/images/seasons.png)
+
+**The mountains: an ibex climbing with the context, Alpenglühen, a sea of fog, bonfires on the peaks**
+
+![The mountains landscape in winter, summer, Alpenglühen, a sea of fog, on 1 August and at Christmas](docs/images/mountains.png)
 
 **Occasions and costumes**
 
@@ -133,13 +138,14 @@ Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'
 | `/backdrop figure 20` · `/backdrop moon 85` | move the figure or the moon (percent of the window width); `/backdrop layout reset` goes back to the settings |
 | `/backdrop region DE` · `/backdrop region auto` | show another country's occasions and remember it, or detect it again |
 | `/backdrop occasions` | list the occasions of your region with their next date |
+| `/backdrop landscape mountains` · `/backdrop landscape winter` | switch between the Alps with the ibex and the winter landscape, and remember it |
 | `/backdrop language fr` · `/backdrop language auto` | switch the language of the texts and remember it, or follow the system again |
 | `/backdrop reset` | end all previews and go back to today (`/backdrop` reminds you while a preview is on) |
 | `/backdrop help` | the help, in your language |
 
 ## Customising
 
-Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each: language, label position (above the figure or a top corner), layout, falling mode, region settings (above), costumes, number of fir trees and size of the figure, colours of the accessories, context stages, number of flakes, weather per model, how long click effects and moods last, occasions, and the calendar of the first snow and the thaw.
+Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each: landscape, language, label position (above the figure or a top corner), layout, falling mode, region settings (above), costumes, number of fir trees and size of the figure, colours of the accessories, context stages, number of flakes, weather per model, how long click effects and moods last, occasions, and the calendar of the first snow and the thaw.
 
 ## Development
 

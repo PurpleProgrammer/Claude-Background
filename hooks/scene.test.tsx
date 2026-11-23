@@ -76,6 +76,16 @@ test('a preview says how to end it, and the language can be switched', async $ =
   expect(JSON.stringify(await run('language auto'))).toContain('Language: English')
 })
 
+test('the mountains: an ibex instead of the snowman, switched by command', async $ => {
+  const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('landscape mountains'))).toContain('Landscape: mountains')
+  const state = JSON.stringify(await run('context 90'))
+  expect(state).toContain('Landscape: mountains')
+  expect(state).toContain('backpack and rope')
+  expect(JSON.stringify(await run('landschaft winterlandschaft'))).toContain('winter landscape')
+  expect(JSON.stringify(await run('landscape moon'))).toContain('/backdrop landscape winter|mountains')
+})
+
 test('German words work too', async $ => {
   const out = await $.command.run({ command: 'winter', args: 'ostern' } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(out)).toContain('Easter')

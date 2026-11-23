@@ -2,7 +2,8 @@ import { t, type Occasion, type Season } from './i18n.js'
 import { occasionContext } from './context.js'
 import { fireworks, regionalDecor, seeded, starPath, type DecorResult, type ParticleKind } from './decor.js'
 import { dayNumber, occasionDayIndex, occasionDef, occasionOn, type DateParts } from './occasions.js'
-import { SETTINGS, type Weather } from './settings.js'
+import { IBEX_CLIMB, IBEX_HEIGHT, ibex, mountainMeadow, mountainRange, mountainStyle } from './landscapes/mountains.js'
+import { SETTINGS, type LandscapeId, type Weather } from './settings.js'
 
 const CFG = SETTINGS
 
@@ -19,6 +20,8 @@ export type SceneInput = {
   date: DateParts
   /** Shows this occasion whatever the date says (for previews). */
   occasion?: Occasion
+  /** Which landscape to draw (absent: the settings). */
+  landscape?: LandscapeId
   /** Whether things fall, and after how many seconds they fade away (absent: they keep falling). */
   fall?: { show: boolean; fadeAfter?: number; shift?: number; paused?: boolean }
   /** Where figure and moon stand, as a share of the window width (absent: the settings). */
@@ -930,8 +933,22 @@ export function buildScene(input: SceneInput): string {
   const gd = ground('dark', y)
   const sky = SKY[input.weather]
 
+  const landscape = input.landscape ?? CFG.landscape
+  const mountains = landscape === 'mountains'
   let figure: string
-  if (y.figure === 'snowman') {
+  if (mountains) {
+    figure = ibex(p, input.mood, {
+      costume: costumeFor(y.occasion),
+      stage: stage(p),
+      colors: CFG.colors,
+      hatSvg: costumeHat,
+      handSvg: handItem,
+      faceSvg: costumeFace,
+      bodySvg: costumeBody,
+      beanieSvg: beanie,
+      marks: moodMarks,
+    })
+  } else if (y.figure === 'snowman') {
     figure = snowman(y, p, input.mood)
   } else if (y.figure === 'remains') {
     figure = remains(p)
@@ -958,7 +975,9 @@ export function buildScene(input: SceneInput): string {
   // (the figure grows with the window height, so this is a share of the height too).
   const aboveFigure = CFG.label.position === 'above-figure'
   const right = CFG.label.position === 'top-right'
-  const figureTop = (860 - clamp(CFG.figureSize, 0.6, 1.6) * 480) / 10
+  // How tall the figure stands: the ibex adds the rock it has climbed.
+  const figureHeight = mountains ? IBEX_HEIGHT + 40 + (p / 100) * IBEX_CLIMB : 480
+  const figureTop = (860 - clamp(CFG.figureSize, 0.6, 1.6) * figureHeight) / 10
   const anchorX = aboveFigure ? `${(clamp(input.layout?.figureX ?? CFG.layout.figureX) * 100).toFixed(1)}%` : right ? '100%' : '0'
   const anchorY = aboveFigure ? `${Math.max(8, figureTop - 1).toFixed(1)}%` : '0'
   const pillX = aboveFigure ? -Math.round(pillW / 2) : right ? -CFG.label.offsetX - pillW : CFG.label.offsetX
@@ -1098,6 +1117,7 @@ export function buildScene(input: SceneInput): string {
     .lbl { fill: #eaf1f8; } .sub { fill: #b8c8da; }
     .pill { fill: #0f1724; opacity: 0.7; }
   }
+${mountains ? mountainStyle(input.weather) : ''}
 </style>
 <defs>
   <linearGradient id="aur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7dffc4" stop-opacity="0"/><stop offset="0.5" stop-color="#4dffa6" stop-opacity="0.9"/><stop offset="1" stop-color="#9a7dff" stop-opacity="0"/></linearGradient>
@@ -1120,9 +1140,11 @@ ${greeting}
 ${pinned(input.layout?.moonX ?? CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked, decor.moon)}</g>`)}
 <!-- hills -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+${mountains ? mountainRange(y, { clicked }) : ''}
 <path class="far" d="M0 640 C 220 560 420 600 640 570 C 880 535 1100 600 1320 560 C 1450 540 1530 560 1600 575 L1600 1000 L0 1000 Z"/>
 ${pines(y, decor.treeLights, clicked, seeded(21))}
 <path class="near" d="M0 740 C 260 690 520 720 800 700 C 1080 680 1320 730 1600 705 L1600 1000 L0 1000 Z"/>
+${mountains ? mountainMeadow(y) : ''}
 <path class="ground" d="M0 840 C 300 815 700 835 1000 822 C 1250 812 1450 830 1600 825 L1600 1000 L0 1000 Z"/>
 ${fog}
 ${extras}

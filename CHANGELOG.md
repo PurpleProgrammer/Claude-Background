@@ -2,6 +2,15 @@
 
 All notable changes to Interactive Background for Claude.
 
+## 1.1.0
+
+- A second landscape, the Alps: `/backdrop landscape mountains` (or `landscape: 'mountains'` in the settings)
+  - an ibex as the figure, climbing its rock as the context fills, with a cap between its horns, a scarf, and a backpack with a rope at 75 %; it wears the occasions' costumes and cheers or startles like the snowman
+  - the snowline on the peaks follows the seasons; cows with bells graze on the alp in spring and summer
+  - sunset weather turns into Alpenglühen on the snow, fog lies as a sea of fog between the peaks
+  - bonfires on the summits on 1 August; a click sends an eagle across and puffs up a little snow slide
+- Landscape-specific drawing lives in `hooks/landscapes/`; weather, occasions, label and commands stay shared
+
 ## 1.0.0
 
 First public release.
