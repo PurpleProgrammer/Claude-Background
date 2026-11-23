@@ -28,6 +28,8 @@ type Texts = {
   weather: Record<Weather, string>
   falling: Record<FallingMode, string>
   fallingSet: (mode: string) => string
+  layoutSet: (figure: number, moon: number) => string
+  layoutUsage: string
   contextShare: (percent: number) => string
   loadingModel: string
   unknownModel: string
@@ -36,7 +38,7 @@ type Texts = {
   commandDescription: string
   help: string
   date: (y: number, m: number, d: number) => string
-  labels: { date: string; season: string; occasion: string; model: string; weather: string; context: string; accessories: string; falling: string }
+  labels: { date: string; season: string; occasion: string; model: string; weather: string; context: string; accessories: string; falling: string; layout: string }
   preview: string
   accessories: { hat: string; scarf: string; broom: string; none: string }
   previewEnded: string
@@ -68,8 +70,10 @@ const EN: Texts = {
     newYear: 'New Year',
   },
   weather: { clear: 'clear', sunset: 'sunset', fog: 'fog', magic: 'magic' },
-  falling: { always: 'always', burst: 'a few seconds after each change', off: 'off' },
+  falling: { always: 'always', burst: 'a few seconds after each change', freeze: 'a few seconds after each change, then frozen in mid-air', off: 'off' },
   fallingSet: mode => `Falling: ${mode}. Remembered for your next sessions.`,
+  layoutSet: (f, m) => `Figure at ${f} %, moon at ${m} % of the window width. Remembered for your next sessions.`,
+  layoutUsage: 'Usage: /backdrop figure 20 · /backdrop moon 85 · /backdrop layout reset',
   contextShare: p => `${p}% context`,
   loadingModel: 'Loading model',
   unknownModel: 'unknown',
@@ -87,11 +91,14 @@ const EN: Texts = {
     '  /winter weather clear|sunset|fog|magic',
     '  /winter context 80           simulate how full the context is',
     '  /winter cheer | fright       let the figure cheer or get a fright',
-    '  /winter falling always|burst|off   snow and leaves fall always, for a few seconds after each change, or never',
+    '  /winter falling always|burst|freeze|off   fall always, for a few seconds then clear,',
+    '                               for a few seconds then freeze in mid-air, or never',
+    '  /winter figure 20 | moon 85  move the figure or the moon (percent of the window width)',
+    '  /winter layout reset         back to the positions in the settings',
     '  /winter reset                end all previews',
   ].join('\n'),
   date: (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
-  labels: { date: 'Date', season: 'Season', occasion: 'Occasion', model: 'Model', weather: 'Weather', context: 'Context', accessories: 'Accessories', falling: 'Falling' },
+  labels: { date: 'Date', season: 'Season', occasion: 'Occasion', model: 'Model', weather: 'Weather', context: 'Context', accessories: 'Accessories', falling: 'Falling', layout: 'Layout' },
   preview: '(preview)',
   accessories: { hat: 'hat', scarf: 'scarf', broom: 'broom and mittens', none: 'none yet' },
   previewEnded: 'Preview ended.',
@@ -123,8 +130,10 @@ const DE: Texts = {
     newYear: 'Neujahr',
   },
   weather: { clear: 'klar', sunset: 'Abendrot', fog: 'Nebel', magic: 'Zauber' },
-  falling: { always: 'immer', burst: 'ein paar Sekunden nach jeder Änderung', off: 'aus' },
+  falling: { always: 'immer', burst: 'ein paar Sekunden nach jeder Änderung', freeze: 'ein paar Sekunden nach jeder Änderung, dann bleibt alles in der Luft stehen', off: 'aus' },
   fallingSet: mode => `Fallen: ${mode}. Wird für die nächsten Sitzungen gemerkt.`,
+  layoutSet: (f, m) => `Figur bei ${f} %, Mond bei ${m} % der Fensterbreite. Wird für die nächsten Sitzungen gemerkt.`,
+  layoutUsage: 'Bitte so: /backdrop figur 20 · /backdrop mond 85 · /backdrop layout zurück',
   contextShare: p => `${p} % Kontext`,
   loadingModel: 'Modell wird geladen',
   unknownModel: 'unbekannt',
@@ -143,13 +152,16 @@ const DE: Texts = {
     '  /winter wetter klar|abendrot|nebel|zauber',
     '  /winter kontext 80           Kontext-Füllstand simulieren',
     '  /winter jubel | schreck      Figur jubeln oder erschrecken lassen',
-    '  /winter fallen immer|kurz|aus   Schnee und Blätter fallen immer, ein paar Sekunden nach jeder Änderung oder nie',
+    '  /winter fallen immer|kurz|einfrieren|aus   immer, ein paar Sekunden und dann klar,',
+    '                               ein paar Sekunden und dann in der Luft stehen, oder nie',
+    '  /winter figur 20 | mond 85   Figur oder Mond verschieben (Prozent der Fensterbreite)',
+    '  /winter layout zurück        zurück zu den Positionen aus den Einstellungen',
     '  /winter zurück               alle Vorschauen beenden',
     '',
     'Die englischen Wörter (date, weather, context, cheer, reset …) funktionieren ebenfalls.',
   ].join('\n'),
   date: (y, m, d) => `${d}.${m}.${y}`,
-  labels: { date: 'Datum', season: 'Jahreszeit', occasion: 'Anlass', model: 'Modell', weather: 'Wetter', context: 'Kontext', accessories: 'Accessoires', falling: 'Fallen' },
+  labels: { date: 'Datum', season: 'Jahreszeit', occasion: 'Anlass', model: 'Modell', weather: 'Wetter', context: 'Kontext', accessories: 'Accessoires', falling: 'Fallen', layout: 'Anordnung' },
   preview: '(Vorschau)',
   accessories: { hat: 'Mütze', scarf: 'Schal', broom: 'Besen und Fäustlinge', none: 'noch keine' },
   previewEnded: 'Vorschau beendet.',

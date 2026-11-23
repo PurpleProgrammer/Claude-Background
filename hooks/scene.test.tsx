@@ -39,7 +39,15 @@ test('falling can be switched', async $ => {
   const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(await run('falling burst'))).toContain('a few seconds')
   expect(JSON.stringify(await run('fallen aus'))).toContain('off')
+  expect(JSON.stringify(await run('fallen einfrieren'))).toContain('frozen in mid-air')
   expect(JSON.stringify(await run('falling always'))).toContain('always')
+})
+
+test('figure and moon can be moved', async $ => {
+  const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('figure 20'))).toContain('Figure at 20 %')
+  expect(JSON.stringify(await run('mond 85'))).toContain('moon at 85 %')
+  expect(JSON.stringify(await run('layout reset'))).toContain('Figure at 27 %')
 })
 
 test('German words work too', async $ => {

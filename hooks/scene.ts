@@ -17,7 +17,9 @@ export type SceneInput = {
   /** Shows this occasion whatever the date says (for previews). */
   occasion?: Occasion
   /** Whether things fall, and after how many seconds they fade away (absent: they keep falling). */
-  fall?: { show: boolean; fadeAfter?: number }
+  fall?: { show: boolean; fadeAfter?: number; shift?: number; paused?: boolean }
+  /** Where figure and moon stand, as a share of the window width (absent: the settings). */
+  layout?: { figureX: number; moonX: number }
   /** Set while a click effect plays: where the click landed (0 to 1). */
   click?: { x: number; y: number; seq: number }
 }
@@ -305,7 +307,7 @@ const SKY: Record<Weather, { light: [string, string, string]; dark: [string, str
 
 // ── pieces of the scene ───────────────────────────────────────────────────
 
-function particles(y: YearState, percent: number, rand: () => number): string {
+function particles(y: YearState, percent: number, rand: () => number, shift = 0): string {
   const p = clamp(percent / 100)
   const count = Math.round(CFG.flakes.minimum + p * (CFG.flakes.maximum - CFG.flakes.minimum))
   const baseFall = 22 - p * 10
@@ -318,7 +320,8 @@ function particles(y: YearState, percent: number, rand: () => number): string {
     const pick = rand() * total
     const lane = i % 3
     const dur = baseFall * (0.7 + rand() * 0.6)
-    const delay = -rand() * dur
+    // shift moves every flake on by that many seconds, so a frozen frame matches the moment it froze.
+    const delay = -rand() * dur - shift
     if (pick < w.snow) {
       const r = (1.2 + rand() * 2.6).toFixed(1)
       const op = (0.55 + rand() * 0.45).toFixed(2)
@@ -1103,6 +1106,7 @@ export function buildScene(input: SceneInput): string {
   .batwing { animation: flap 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 60%; }
   .glow { fill: #5a2a00; }
   .fadeaway { animation: fadeaway 2.5s ease-in 1 both; }
+  .frozen * { animation-play-state: paused; }
   .heart { animation: rise 16s ease-in-out infinite; opacity: 0; }
   .balloon { animation: balloon 40s ease-in-out infinite alternate; }
   .firefly { fill: #fff27a; opacity: 0; animation: firefly 6s ease-in-out infinite; }
@@ -1184,7 +1188,7 @@ ${sky2}
 ${greeting}
 </svg>
 <!-- moon or sun, pinned to a share of the window width, scaled with its height -->
-${pinned(CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>`)}
+${pinned(input.layout?.moonX ?? CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>`)}
 <!-- hills -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
 <path class="far" d="M0 640 C 220 560 420 600 640 570 C 880 535 1100 600 1320 560 C 1450 540 1530 560 1600 575 L1600 1000 L0 1000 Z"/>
@@ -1195,10 +1199,10 @@ ${fog}
 ${extras}
 </svg>
 <!-- figure, pinned to a share of the window width, scaled with its height -->
-${pinned(CFG.layout.figureX, 'xMidYMax', `<g transform="translate(0 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>`)}
+${pinned(input.layout?.figureX ?? CFG.layout.figureX, 'xMidYMax', `<g transform="translate(0 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>`)}
 <!-- falling things, in front of the figure -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-${fall.show ? `<g${fall.fadeAfter !== undefined ? ` class="fadeaway" style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand)}</g>` : ''}
+${fall.show ? `<g class="${fall.paused ? 'frozen' : fall.fadeAfter !== undefined ? 'fadeaway' : ''}"${fall.fadeAfter !== undefined && !fall.paused ? ` style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand, fall.shift ?? 0)}</g>` : ''}
 ${input.click ? `<g>${gust(y, input.click, seeded(input.click.seq + 101))}</g>` : ''}
 </svg>
 <!-- label, pinned to a top corner in screen pixels -->

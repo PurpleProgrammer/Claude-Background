@@ -20,8 +20,11 @@ export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
  */
 export type Location = 'zurich' | 'basel' | 'bern' | 'lucerne' | 'other'
 
-/** How things fall: 'always', 'burst' (a few seconds after each change, then the sky clears) or 'off'. */
-export type FallingMode = 'always' | 'burst' | 'off'
+/**
+ * How things fall: 'always', 'burst' (a few seconds after each change, then the sky
+ * clears), 'freeze' (a few seconds, then everything stops in mid-air) or 'off'.
+ */
+export type FallingMode = 'always' | 'burst' | 'freeze' | 'off'
 
 /** Languages of the texts in the scene and of the /winter command: 'en' or 'de'. */
 export type Language = 'en' | 'de'
@@ -50,7 +53,8 @@ export const SETTINGS = {
   /**
    * Where the figure and the moon (or sun) stand, as a share of the window's
    * width: 0 is the left edge, 1 the right edge. The defaults keep them in the
-   * free space beside the conversation.
+   * free space beside the conversation. "/backdrop figure 20" and
+   * "/backdrop moon 85" move them without editing this file.
    */
   layout: {
     figureX: 0.27,
@@ -60,7 +64,8 @@ export const SETTINGS = {
   /**
    * How snow, leaves and petals fall: 'always', 'burst' (they fall for
    * burstSeconds after each change, such as the context filling or a click,
-   * and then the sky clears) or 'off'. "/backdrop falling burst" changes it
+   * and then the sky clears), 'freeze' (the same, but they stop in mid-air)
+   * or 'off'. "/backdrop falling burst" changes it
    * and remembers your choice.
    */
   falling: {

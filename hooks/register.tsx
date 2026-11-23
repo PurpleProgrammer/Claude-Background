@@ -55,6 +55,11 @@ let moodSeq = 0
 let fallingMode: FallingMode = SETTINGS.falling.mode
 let falling = true
 let fallSeq = 0
+// Seconds the flakes have fallen in earlier bursts, so a new burst goes on from the frozen frame.
+let fallShift = 0
+let frozen = false
+// Positions set with /backdrop figure and /backdrop moon (shares of the window width).
+let layout: { figureX: number; moonX: number } | undefined
 
 /** Commands that run tests. */
 const TEST_COMMAND =
@@ -199,33 +204,57 @@ const WEATHER_WORDS: Record<string, Weather> = {
   zauber: 'magic',
 }
 const MOOD_WORDS: Record<string, Mood> = { cheer: 'cheer', jubel: 'cheer', fright: 'fright', schreck: 'fright' }
-const FALLING_WORDS: Record<string, FallingMode> = { always: 'always', immer: 'always', burst: 'burst', short: 'burst', kurz: 'burst', off: 'off', aus: 'off' }
+const FALLING_WORDS: Record<string, FallingMode> = {
+  always: 'always',
+  immer: 'always',
+  burst: 'burst',
+  short: 'burst',
+  kurz: 'burst',
+  freeze: 'freeze',
+  einfrieren: 'freeze',
+  stopp: 'freeze',
+  off: 'off',
+  aus: 'off',
+}
 
 type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }
 
 /** Something happened: in burst mode, let things fall for a few seconds and then clear the sky. */
 function stir($: Clock$): void {
-  if (fallingMode !== 'burst') {
+  if (fallingMode !== 'burst' && fallingMode !== 'freeze') {
     return
   }
   fallSeq += 1
   const seq = fallSeq
   falling = true
+  frozen = false
   $.ui.invalidate('ui.render')
-  $.clock.after((SETTINGS.falling.burstSeconds + 3) * 1000, () => {
-    if (fallSeq === seq) {
-      falling = false
-      $.ui.invalidate('ui.render')
+  const freeze = fallingMode === 'freeze'
+  const after = freeze ? SETTINGS.falling.burstSeconds : SETTINGS.falling.burstSeconds + 3
+  $.clock.after(after * 1000, () => {
+    if (fallSeq !== seq) {
+      return
     }
+    if (freeze) {
+      // Draw the same flakes, moved on by the seconds they fell, and hold them there.
+      fallShift += SETTINGS.falling.burstSeconds
+      frozen = true
+    } else {
+      falling = false
+    }
+    $.ui.invalidate('ui.render')
   })
 }
 
-function fallFor(): { show: boolean; fadeAfter?: number } {
+function fallFor(): { show: boolean; fadeAfter?: number; shift?: number; paused?: boolean } {
   if (fallingMode === 'off') {
     return { show: false }
   }
   if (fallingMode === 'burst') {
     return falling ? { show: true, fadeAfter: SETTINGS.falling.burstSeconds } : { show: false }
+  }
+  if (fallingMode === 'freeze') {
+    return { show: true, shift: fallShift, paused: frozen }
   }
   return { show: true }
 }
@@ -260,6 +289,7 @@ function describe(): string {
     `${tx.labels.model}: ${prettyModel(modelId) || tx.unknownModel} · ${tx.labels.weather}: ${tx.weather[c.weather]}${mark(preview.weather !== undefined)}`,
     `${tx.labels.context}: ${tx.contextShare(Math.round(c.p))}${mark(preview.percent !== undefined)} · ${tx.labels.accessories}: ${acc.length > 0 ? acc.join(', ') : tx.accessories.none}`,
     `${tx.labels.falling}: ${tx.falling[fallingMode]}`,
+    `${tx.labels.layout}: ${Math.round((layout?.figureX ?? SETTINGS.layout.figureX) * 100)} % / ${Math.round((layout?.moonX ?? SETTINGS.layout.moonX) * 100)} %`,
   ].join('\n')
 }
 
@@ -318,8 +348,12 @@ export const register: Register = on => {
     }
     try {
       const stored = await $.store.get('fallingMode')
-      if (stored === 'always' || stored === 'burst' || stored === 'off') {
+      if (stored === 'always' || stored === 'burst' || stored === 'freeze' || stored === 'off') {
         fallingMode = stored
+      }
+      const place = (await $.store.get('layout')) as { figureX?: unknown; moonX?: unknown } | undefined
+      if (place && typeof place.figureX === 'number' && typeof place.moonX === 'number') {
+        layout = { figureX: place.figureX, moonX: place.moonX }
       }
     } catch {
       // Keep the mode from the settings.
@@ -355,6 +389,28 @@ export const register: Register = on => {
       $.ui.invalidate('ui.render')
       return { text: t().fallingSet(t().falling[fallingMode]) }
     }
+    const placeWord = words[0] ?? ''
+    if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
+      const tx = t()
+      if ((placeWord === 'layout' || placeWord === 'anordnung') && ['reset', 'zurück', 'zurueck'].includes(words[1] ?? '')) {
+        layout = undefined
+        await $.store.delete('layout').catch(() => undefined)
+        $.ui.invalidate('ui.render')
+        return { text: tx.layoutSet(Math.round(SETTINGS.layout.figureX * 100), Math.round(SETTINGS.layout.moonX * 100)) }
+      }
+      const value = Number(words[1])
+      if (placeWord === 'layout' || placeWord === 'anordnung' || words[1] === undefined || Number.isNaN(value)) {
+        return { text: tx.layoutUsage }
+      }
+      const share = Math.max(0, Math.min(100, value)) / 100
+      const nextLayout = { figureX: layout?.figureX ?? SETTINGS.layout.figureX, moonX: layout?.moonX ?? SETTINGS.layout.moonX }
+      if (placeWord === 'figure' || placeWord === 'figur') nextLayout.figureX = share
+      else nextLayout.moonX = share
+      layout = nextLayout
+      await $.store.set('layout', layout).catch(() => undefined)
+      $.ui.invalidate('ui.render')
+      return { text: tx.layoutSet(Math.round(layout.figureX * 100), Math.round(layout.moonX * 100)) }
+    }
     const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
     if (asMood !== undefined) {
       feel($, asMood)
@@ -375,6 +431,28 @@ export const register: Register = on => {
       stir($)
       $.ui.invalidate('ui.render')
       return { text: t().fallingSet(t().falling[fallingMode]) }
+    }
+    const placeWord = words[0] ?? ''
+    if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
+      const tx = t()
+      if ((placeWord === 'layout' || placeWord === 'anordnung') && ['reset', 'zurück', 'zurueck'].includes(words[1] ?? '')) {
+        layout = undefined
+        await $.store.delete('layout').catch(() => undefined)
+        $.ui.invalidate('ui.render')
+        return { text: tx.layoutSet(Math.round(SETTINGS.layout.figureX * 100), Math.round(SETTINGS.layout.moonX * 100)) }
+      }
+      const value = Number(words[1])
+      if (placeWord === 'layout' || placeWord === 'anordnung' || words[1] === undefined || Number.isNaN(value)) {
+        return { text: tx.layoutUsage }
+      }
+      const share = Math.max(0, Math.min(100, value)) / 100
+      const nextLayout = { figureX: layout?.figureX ?? SETTINGS.layout.figureX, moonX: layout?.moonX ?? SETTINGS.layout.moonX }
+      if (placeWord === 'figure' || placeWord === 'figur') nextLayout.figureX = share
+      else nextLayout.moonX = share
+      layout = nextLayout
+      await $.store.set('layout', layout).catch(() => undefined)
+      $.ui.invalidate('ui.render')
+      return { text: tx.layoutSet(Math.round(layout.figureX * 100), Math.round(layout.moonX * 100)) }
     }
     const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
     if (asMood !== undefined) {
@@ -450,7 +528,7 @@ export const register: Register = on => {
 
     return (
       <Svg
-        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, fall: fallFor(), click, mood })}
+        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, fall: fallFor(), layout, click, mood })}
         alt={t().alt(t().seasons[y.season], Math.round(c.p), model)}
         isInteractive
       />

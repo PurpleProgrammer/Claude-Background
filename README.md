@@ -81,7 +81,9 @@ The background shows in the desktop and mobile apps. The terminal draws no backg
 | `/backdrop weather magic` | weather `clear`, `sunset`, `fog` or `magic` |
 | `/backdrop context 80` | simulate how full the context is |
 | `/backdrop cheer` · `/backdrop fright` | let the figure cheer or get a fright |
-| `/backdrop falling burst` | snow and leaves fall only for a few seconds after each change; `always` or `off` also work, and your choice is remembered |
+| `/backdrop falling burst` | snow and leaves fall only for a few seconds after each change, then the sky clears |
+| `/backdrop falling freeze` | the same, but everything stops in mid-air; `always` and `off` also work, and your choice is remembered |
+| `/backdrop figure 20` · `/backdrop moon 85` | move the figure or the moon (percent of the window width); `/backdrop layout reset` goes back to the settings |
 | `/backdrop reset` | end all previews |
 
 ## Customising
@@ -90,8 +92,8 @@ Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for
 
 - `language`: `'en'` or `'de'` for all texts in the scene and in `/backdrop`
 - `label`: top right or top left, and the distance from the window's edges
-- `layout`: where the figure and the moon stand, as a share of the window's width
-- `falling`: whether things fall always, for a few seconds after each change, or never
+- `layout`: where the figure and the moon stand, as a share of the window's width (the app does not tell mods how wide its sidebar is, so this does not adapt by itself)
+- `falling`: whether things fall always, for a few seconds after each change and then clear or freeze, or never
 - `location`: your town (`zurich`, `basel`, `bern`, `lucerne` or `other`) for carnival dates and Sechseläuten
 - `costumes`: whether the figure dresses up on occasions
 - number of fir trees and size of the figure

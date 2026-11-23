@@ -87,7 +87,9 @@ In [`hooks/settings.ts`](hooks/settings.ts) `language: 'en'` durch `language: 'd
 | `/backdrop wetter zauber` | Wetter `klar`, `abendrot`, `nebel` oder `zauber` |
 | `/backdrop kontext 80` | Kontext-Füllstand simulieren |
 | `/backdrop jubel` · `/backdrop schreck` | Figur jubeln oder erschrecken lassen |
-| `/backdrop fallen kurz` | Schnee und Blätter fallen nur ein paar Sekunden nach jeder Änderung; `immer` oder `aus` gehen auch, die Wahl wird gemerkt |
+| `/backdrop fallen kurz` | Schnee und Blätter fallen nur ein paar Sekunden nach jeder Änderung, dann wird der Himmel klar |
+| `/backdrop fallen einfrieren` | ebenso, aber alles bleibt in der Luft stehen; `immer` und `aus` gehen auch, die Wahl wird gemerkt |
+| `/backdrop figur 20` · `/backdrop mond 85` | Figur oder Mond verschieben (Prozent der Fensterbreite); `/backdrop layout zurück` stellt die Einstellungen wieder her |
 | `/backdrop zurück` | Vorschau beenden |
 
 ## Anpassen
@@ -96,8 +98,8 @@ Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/setting
 
 - `language`: `'en'` oder `'de'` für alle Texte in der Szene und in `/backdrop`
 - `label`: oben rechts oder oben links, und der Abstand zum Fensterrand
-- `layout`: wo Figur und Mond stehen, als Anteil der Fensterbreite
-- `falling`: ob immer etwas fällt, nur ein paar Sekunden nach jeder Änderung oder nie
+- `layout`: wo Figur und Mond stehen, als Anteil der Fensterbreite (die App verrät Mods nicht, wie breit ihre Seitenleiste ist, deshalb passt sich das nicht von selbst an)
+- `falling`: ob immer etwas fällt, nur ein paar Sekunden nach jeder Änderung und dann klar oder eingefroren, oder nie
 - `location`: dein Ort (`zurich`, `basel`, `bern`, `lucerne` oder `other`) für die Fasnachtsdaten und das Sechseläuten
 - `costumes`: ob sich die Figur an Anlässen verkleidet
 - Anzahl Tannen und Grösse der Figur
