@@ -1,5 +1,6 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
+import { region } from './context.js'
 import { t } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
@@ -276,6 +277,19 @@ function feel($: Clock$, next: Mood): void {
   })
 }
 
+/** "Region: CH (detected via Europe/Zurich) · Europe/Zurich · northern hemisphere" */
+function regionText(): string {
+  const tx = t()
+  const r = region()
+  const how =
+    r.source.region === 'zone'
+      ? tx.regionHow.zone(r.env.timeZone)
+      : r.source.region === 'locale'
+        ? tx.regionHow.locale(r.env.locale)
+        : tx.regionHow[r.source.region]
+  return tx.regionLine(r.subdivision || r.region, how, r.timeZone, r.hemisphere)
+}
+
 function describe(): string {
   const tx = t()
   const c = current()
@@ -288,6 +302,7 @@ function describe(): string {
     `${tx.labels.season}: ${tx.seasons[y.season]}${y.occasion ? ` · ${tx.labels.occasion}: ${tx.occasions[y.occasion]}` : ''}`,
     `${tx.labels.model}: ${prettyModel(modelId) || tx.unknownModel} · ${tx.labels.weather}: ${tx.weather[c.weather]}${mark(preview.weather !== undefined)}`,
     `${tx.labels.context}: ${tx.contextShare(Math.round(c.p))}${mark(preview.percent !== undefined)} · ${tx.labels.accessories}: ${acc.length > 0 ? acc.join(', ') : tx.accessories.none}`,
+    regionText(),
     `${tx.labels.falling}: ${tx.falling[fallingMode]}`,
     `${tx.labels.layout}: ${Math.round((layout?.figureX ?? SETTINGS.layout.figureX) * 100)} % / ${Math.round((layout?.moonX ?? SETTINGS.layout.moonX) * 100)} %`,
   ].join('\n')

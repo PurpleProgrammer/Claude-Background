@@ -29,6 +29,8 @@ type Texts = {
   falling: Record<FallingMode, string>
   fallingSet: (mode: string) => string
   layoutSet: (figure: number, moon: number) => string
+  regionLine: (region: string, how: string, timeZone: string, hemisphere: string) => string
+  regionHow: { setting: string; zone: (zone: string) => string; locale: (locale: string) => string; legacy: string; none: string }
   layoutUsage: string
   contextShare: (percent: number) => string
   loadingModel: string
@@ -73,6 +75,8 @@ const EN: Texts = {
   falling: { always: 'always', burst: 'a few seconds after each change', freeze: 'a few seconds after each change, then frozen in mid-air', off: 'off' },
   fallingSet: mode => `Falling: ${mode}. Remembered for your next sessions.`,
   layoutSet: (f, m) => `Figure at ${f} %, moon at ${m} % of the window width. Remembered for your next sessions.`,
+  regionLine: (r, how, tz, h) => `Region: ${r} (${how}) · ${tz} · ${h === 'south' ? 'southern' : 'northern'} hemisphere`,
+  regionHow: { setting: 'set', zone: z => `detected via ${z}`, locale: l => `detected from locale ${l}`, legacy: 'from the old location setting', none: 'not detected, global occasions only' },
   layoutUsage: 'Usage: /backdrop figure 20 · /backdrop moon 85 · /backdrop layout reset',
   contextShare: p => `${p}% context`,
   loadingModel: 'Loading model',
@@ -133,6 +137,8 @@ const DE: Texts = {
   falling: { always: 'immer', burst: 'ein paar Sekunden nach jeder Änderung', freeze: 'ein paar Sekunden nach jeder Änderung, dann bleibt alles in der Luft stehen', off: 'aus' },
   fallingSet: mode => `Fallen: ${mode}. Wird für die nächsten Sitzungen gemerkt.`,
   layoutSet: (f, m) => `Figur bei ${f} %, Mond bei ${m} % der Fensterbreite. Wird für die nächsten Sitzungen gemerkt.`,
+  regionLine: (r, how, tz, h) => `Region: ${r} (${how}) · ${tz} · ${h === 'south' ? 'Südhalbkugel' : 'Nordhalbkugel'}`,
+  regionHow: { setting: 'eingestellt', zone: z => `erkannt über ${z}`, locale: l => `erkannt über die Locale ${l}`, legacy: 'aus der alten Einstellung location', none: 'nicht erkannt, nur globale Anlässe' },
   layoutUsage: 'Bitte so: /backdrop figur 20 · /backdrop mond 85 · /backdrop layout zurück',
   contextShare: p => `${p} % Kontext`,
   loadingModel: 'Modell wird geladen',

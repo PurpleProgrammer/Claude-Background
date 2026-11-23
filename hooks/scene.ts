@@ -1,4 +1,5 @@
 import { t, type Occasion, type Season } from './i18n.js'
+import { region } from './context.js'
 import { SETTINGS, type Weather } from './settings.js'
 
 const CFG = SETTINGS
@@ -172,10 +173,10 @@ function nthWeekday(y: number, m: number, weekday: number, n: number): number {
 function carnivalDays(y: number): [number, number] {
   const e = easterSunday(y)
   const easter = dayNumber(e.y, e.m, e.d)
-  if (CFG.location === 'basel') {
+  if (region().subdivision === 'CH-BS') {
     return [easter - 41, easter - 39] // Monday to Wednesday after Ash Wednesday
   }
-  if (CFG.location === 'bern') {
+  if (region().subdivision === 'CH-BE') {
     return [easter - 43, easter - 41] // Thursday to Saturday after Ash Wednesday
   }
   return [easter - 52, easter - 47] // Schmutziger Donnerstag to Güdisdienstag
@@ -239,7 +240,7 @@ export function occasionOn(date: DateParts): Occasion | undefined {
   if (on.womensDay && m === 3 && d === 8) {
     return 'womensDay'
   }
-  if (on.sechselaeuten && CFG.location === 'zurich' && today === sechselaeutenDay(y)) {
+  if (on.sechselaeuten && region().subdivision === 'CH-ZH' && today === sechselaeutenDay(y)) {
     return 'sechselaeuten'
   }
   if (on.labourDay && m === 5 && d === 1) {

@@ -13,12 +13,8 @@
 /** Weather types: 'clear', 'sunset', 'fog' or 'magic'. */
 export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
 
-/**
- * Where you live, for local customs: carnival dates differ between Basel, Bern
- * and Lucerne (also used for the rest of Switzerland), and Sechseläuten is only
- * shown in Zurich.
- */
-export type Location = 'zurich' | 'basel' | 'bern' | 'lucerne' | 'other'
+/** Hemispheres, for the seasons. */
+export type Hemisphere = 'north' | 'south'
 
 /**
  * How things fall: 'always', 'burst' (a few seconds after each change, then the sky
@@ -44,8 +40,29 @@ export const SETTINGS = {
     offsetY: 56,
   },
 
-  /** Your town, for carnival dates and Sechseläuten: 'zurich', 'basel', 'bern', 'lucerne' or 'other'. */
-  location: 'other' as Location,
+  /**
+   * Country whose occasions are shown: 'auto' (worked out from the system's time
+   * zone and locale, shown by /backdrop) or an ISO 3166 code such as 'CH', 'DE', 'US'.
+   */
+  region: 'auto',
+
+  /**
+   * Local customs such as carnival dates and Sechseläuten: '' or an ISO 3166-2
+   * code such as 'CH-ZH', 'CH-BS', 'CH-BE', 'CH-LU', 'DE-BY'. Never guessed.
+   */
+  subdivision: '',
+
+  /** Which calendar day counts: 'auto' (the system's time zone) or an IANA name such as 'Europe/Zurich'. */
+  timeZone: 'auto',
+
+  /** For the seasons: 'auto' (from the time zone or region), 'north' or 'south'. */
+  hemisphere: 'auto' as 'auto' | Hemisphere,
+
+  /** false for places without snow: no snowman, a summer figure all year. */
+  snow: true,
+
+  /** Occasions from other regions or cultures to show as well, e.g. ['diwali', 'hanukkah']. */
+  extraOccasions: [] as string[],
 
   /** On occasions the figure dresses up, e.g. a witch's hat on Halloween: true = on, false = off. */
   costumes: true,
