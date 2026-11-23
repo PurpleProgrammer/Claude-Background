@@ -72,29 +72,32 @@ Der Hintergrund erscheint in der Desktop- und der Mobil-App. Im Terminal wird ke
 
 ## Auf Deutsch umstellen
 
-In [`hooks/settings.ts`](hooks/settings.ts) `language: 'en'` durch `language: 'de'` ersetzen. Danach sind die Anzeige in der Szene und die Antworten von `/background` deutsch.
+In [`hooks/settings.ts`](hooks/settings.ts) `language: 'en'` durch `language: 'de'` ersetzen. Danach sind die Anzeige in der Szene und die Antworten von `/backdrop` deutsch.
 
-## Vorschau mit `/background`
+## Vorschau mit `/backdrop`
 
-`/winter` ist die Kurzform und macht dasselbe. Die deutschen Wörter funktionieren immer, auch wenn die Sprache auf Englisch steht.
+`/winter` ist die Kurzform und macht dasselbe. (`/background` belegt die App selbst.) Die deutschen Wörter funktionieren immer, auch wenn die Sprache auf Englisch steht.
 
 | Befehl | Wirkung |
 |---|---|
-| `/background` | zeigt den aktuellen Zustand |
-| `/background sommer` | Jahreszeit ansehen: `winter`, `ersterschnee`, `tauwetter`, `frühling`, `sommer`, `herbst` |
-| `/background halloween` | Anlass ansehen: `valentinstag`, `fasnacht`, `tagderfrau`, `ostern`, `sechseläuten`, `tagderarbeit`, `muttertag`, `auffahrt`, `pfingsten`, `sonnenwende`, `nationalfeiertag`, `halloween`, `nikolaus`, `advent`, `weihnachten`, `silvester`, `neujahr` |
-| `/background datum 2027-03-20` | beliebiges Datum |
-| `/background wetter zauber` | Wetter `klar`, `abendrot`, `nebel` oder `zauber` |
-| `/background kontext 80` | Kontext-Füllstand simulieren |
-| `/background jubel` · `/background schreck` | Figur jubeln oder erschrecken lassen |
-| `/background zurück` | Vorschau beenden |
+| `/backdrop` | zeigt den aktuellen Zustand |
+| `/backdrop sommer` | Jahreszeit ansehen: `winter`, `ersterschnee`, `tauwetter`, `frühling`, `sommer`, `herbst` |
+| `/backdrop halloween` | Anlass ansehen: `valentinstag`, `fasnacht`, `tagderfrau`, `ostern`, `sechseläuten`, `tagderarbeit`, `muttertag`, `auffahrt`, `pfingsten`, `sonnenwende`, `nationalfeiertag`, `halloween`, `nikolaus`, `advent`, `weihnachten`, `silvester`, `neujahr` |
+| `/backdrop datum 2027-03-20` | beliebiges Datum |
+| `/backdrop wetter zauber` | Wetter `klar`, `abendrot`, `nebel` oder `zauber` |
+| `/backdrop kontext 80` | Kontext-Füllstand simulieren |
+| `/backdrop jubel` · `/backdrop schreck` | Figur jubeln oder erschrecken lassen |
+| `/backdrop fallen kurz` | Schnee und Blätter fallen nur ein paar Sekunden nach jeder Änderung; `immer` oder `aus` gehen auch, die Wahl wird gemerkt |
+| `/backdrop zurück` | Vorschau beenden |
 
 ## Anpassen
 
 Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts):
 
-- `language`: `'en'` oder `'de'` für alle Texte in der Szene und in `/background`
+- `language`: `'en'` oder `'de'` für alle Texte in der Szene und in `/backdrop`
 - `label`: oben rechts oder oben links, und der Abstand zum Fensterrand
+- `layout`: wo Figur und Mond stehen, als Anteil der Fensterbreite
+- `falling`: ob immer etwas fällt, nur ein paar Sekunden nach jeder Änderung oder nie
 - `location`: dein Ort (`zurich`, `basel`, `bern`, `lucerne` oder `other`) für die Fasnachtsdaten und das Sechseläuten
 - `costumes`: ob sich die Figur an Anlässen verkleidet
 - Anzahl Tannen und Grösse der Figur

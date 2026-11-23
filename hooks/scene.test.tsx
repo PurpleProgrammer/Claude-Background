@@ -25,14 +25,21 @@ test('new occasions and Fable weather can be previewed', async $ => {
   expect(JSON.stringify(await run('weather magic'))).toContain('magic')
 })
 
-test('more occasions, local customs and /background', async $ => {
+test('more occasions, local customs and /backdrop', async $ => {
   const run = (command: string, args: string) => $.command.run({ command, args } as Parameters<typeof $.command.run>[0])
-  expect(JSON.stringify(await run('background', 'fasnacht'))).toContain('Carnival')
-  expect(JSON.stringify(await run('background', 'sechseläuten'))).toContain('Sechseläuten')
-  expect(JSON.stringify(await run('background', 'auffahrt'))).toContain('Ascension Day')
+  expect(JSON.stringify(await run('backdrop', 'fasnacht'))).toContain('Carnival')
+  expect(JSON.stringify(await run('backdrop', 'sechseläuten'))).toContain('Sechseläuten')
+  expect(JSON.stringify(await run('backdrop', 'auffahrt'))).toContain('Ascension Day')
   expect(JSON.stringify(await run('winter', 'muttertag'))).toContain("Mother's Day")
   expect(JSON.stringify(await run('winter', 'nikolaus'))).toContain('St Nicholas Day')
   expect(JSON.stringify(await run('winter', 'summer'))).toContain('Summer')
+})
+
+test('falling can be switched', async $ => {
+  const run = (args: string) => $.command.run({ command: 'backdrop', args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('falling burst'))).toContain('a few seconds')
+  expect(JSON.stringify(await run('fallen aus'))).toContain('off')
+  expect(JSON.stringify(await run('falling always'))).toContain('always')
 })
 
 test('German words work too', async $ => {

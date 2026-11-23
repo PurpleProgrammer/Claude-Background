@@ -68,27 +68,30 @@ In the desktop app, where `/plugin` does not run: click **+** next to the prompt
 
 The background shows in the desktop and mobile apps. The terminal draws no background. In portrait on a phone only the middle of the landscape fits.
 
-## Preview with `/background`
+## Preview with `/backdrop`
 
-`/winter` is a short form and does the same.
+`/winter` is a short form and does the same. (`/background` is taken by the app itself.)
 
 | Command | Effect |
 |---|---|
-| `/background` | show the current state |
-| `/background summer` | preview a season: `winter`, `firstsnow`, `thaw`, `spring`, `summer`, `autumn` |
-| `/background halloween` | preview an occasion: `valentine`, `carnival`, `womensday`, `easter`, `sechselaeuten`, `labourday`, `mothersday`, `ascension`, `pentecost`, `midsummer`, `nationalday`, `halloween`, `stnicholas`, `advent`, `christmas`, `newyearseve`, `newyear` |
-| `/background date 2027-03-20` | any date |
-| `/background weather magic` | weather `clear`, `sunset`, `fog` or `magic` |
-| `/background context 80` | simulate how full the context is |
-| `/background cheer` · `/background fright` | let the figure cheer or get a fright |
-| `/background reset` | end all previews |
+| `/backdrop` | show the current state |
+| `/backdrop summer` | preview a season: `winter`, `firstsnow`, `thaw`, `spring`, `summer`, `autumn` |
+| `/backdrop halloween` | preview an occasion: `valentine`, `carnival`, `womensday`, `easter`, `sechselaeuten`, `labourday`, `mothersday`, `ascension`, `pentecost`, `midsummer`, `nationalday`, `halloween`, `stnicholas`, `advent`, `christmas`, `newyearseve`, `newyear` |
+| `/backdrop date 2027-03-20` | any date |
+| `/backdrop weather magic` | weather `clear`, `sunset`, `fog` or `magic` |
+| `/backdrop context 80` | simulate how full the context is |
+| `/backdrop cheer` · `/backdrop fright` | let the figure cheer or get a fright |
+| `/backdrop falling burst` | snow and leaves fall only for a few seconds after each change; `always` or `off` also work, and your choice is remembered |
+| `/backdrop reset` | end all previews |
 
 ## Customising
 
 Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each:
 
-- `language`: `'en'` or `'de'` for all texts in the scene and in `/background`
+- `language`: `'en'` or `'de'` for all texts in the scene and in `/backdrop`
 - `label`: top right or top left, and the distance from the window's edges
+- `layout`: where the figure and the moon stand, as a share of the window's width
+- `falling`: whether things fall always, for a few seconds after each change, or never
 - `location`: your town (`zurich`, `basel`, `bern`, `lucerne` or `other`) for carnival dates and Sechseläuten
 - `costumes`: whether the figure dresses up on occasions
 - number of fir trees and size of the figure

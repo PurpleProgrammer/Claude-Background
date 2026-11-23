@@ -1,6 +1,6 @@
 // Every text the mod shows, in English and German. SETTINGS.language picks one.
 
-import { SETTINGS, type Language, type Weather } from './settings.js'
+import { SETTINGS, type FallingMode, type Language, type Weather } from './settings.js'
 
 export type Season = 'winter' | 'thaw' | 'firstSnow' | 'spring' | 'summer' | 'autumn'
 export type Occasion =
@@ -26,6 +26,8 @@ type Texts = {
   seasons: Record<Season, string>
   occasions: Record<Occasion, string>
   weather: Record<Weather, string>
+  falling: Record<FallingMode, string>
+  fallingSet: (mode: string) => string
   contextShare: (percent: number) => string
   loadingModel: string
   unknownModel: string
@@ -34,7 +36,7 @@ type Texts = {
   commandDescription: string
   help: string
   date: (y: number, m: number, d: number) => string
-  labels: { date: string; season: string; occasion: string; model: string; weather: string; context: string; accessories: string }
+  labels: { date: string; season: string; occasion: string; model: string; weather: string; context: string; accessories: string; falling: string }
   preview: string
   accessories: { hat: string; scarf: string; broom: string; none: string }
   previewEnded: string
@@ -66,6 +68,8 @@ const EN: Texts = {
     newYear: 'New Year',
   },
   weather: { clear: 'clear', sunset: 'sunset', fog: 'fog', magic: 'magic' },
+  falling: { always: 'always', burst: 'a few seconds after each change', off: 'off' },
+  fallingSet: mode => `Falling: ${mode}. Remembered for your next sessions.`,
   contextShare: p => `${p}% context`,
   loadingModel: 'Loading model',
   unknownModel: 'unknown',
@@ -73,7 +77,7 @@ const EN: Texts = {
   alt: (season, p, model) => `Landscape (${season}), context ${p}% full, model ${model}`,
   commandDescription: 'Interactive background: preview seasons, occasions, weather, context and moods',
   help: [
-    'Interactive background preview (/background or /winter):',
+    'Interactive background (/backdrop or /winter):',
     '  /winter                      show the current state',
     '  /winter <season|occasion>    winter, firstsnow, thaw, spring, summer, autumn,',
     '                               valentine, carnival, womensday, easter, sechselaeuten, labourday,',
@@ -83,10 +87,11 @@ const EN: Texts = {
     '  /winter weather clear|sunset|fog|magic',
     '  /winter context 80           simulate how full the context is',
     '  /winter cheer | fright       let the figure cheer or get a fright',
+    '  /winter falling always|burst|off   snow and leaves fall always, for a few seconds after each change, or never',
     '  /winter reset                end all previews',
   ].join('\n'),
   date: (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
-  labels: { date: 'Date', season: 'Season', occasion: 'Occasion', model: 'Model', weather: 'Weather', context: 'Context', accessories: 'Accessories' },
+  labels: { date: 'Date', season: 'Season', occasion: 'Occasion', model: 'Model', weather: 'Weather', context: 'Context', accessories: 'Accessories', falling: 'Falling' },
   preview: '(preview)',
   accessories: { hat: 'hat', scarf: 'scarf', broom: 'broom and mittens', none: 'none yet' },
   previewEnded: 'Preview ended.',
@@ -118,6 +123,8 @@ const DE: Texts = {
     newYear: 'Neujahr',
   },
   weather: { clear: 'klar', sunset: 'Abendrot', fog: 'Nebel', magic: 'Zauber' },
+  falling: { always: 'immer', burst: 'ein paar Sekunden nach jeder Änderung', off: 'aus' },
+  fallingSet: mode => `Fallen: ${mode}. Wird für die nächsten Sitzungen gemerkt.`,
   contextShare: p => `${p} % Kontext`,
   loadingModel: 'Modell wird geladen',
   unknownModel: 'unbekannt',
@@ -125,7 +132,7 @@ const DE: Texts = {
   alt: (season, p, model) => `Landschaft (${season}), Kontext zu ${p} Prozent gefüllt, Modell ${model}`,
   commandDescription: 'Interaktiver Hintergrund: Vorschau von Jahreszeiten, Anlässen, Wetter, Kontext und Stimmungen',
   help: [
-    'Vorschau des interaktiven Hintergrunds (/background oder /winter):',
+    'Interaktiver Hintergrund (/backdrop oder /winter):',
     '  /winter                      zeigt den aktuellen Zustand',
     '  /winter <jahreszeit|anlass>  winter, ersterschnee, tauwetter, frühling, sommer, herbst,',
     '                               valentinstag, fasnacht, tagderfrau, ostern, sechseläuten,',
@@ -136,12 +143,13 @@ const DE: Texts = {
     '  /winter wetter klar|abendrot|nebel|zauber',
     '  /winter kontext 80           Kontext-Füllstand simulieren',
     '  /winter jubel | schreck      Figur jubeln oder erschrecken lassen',
+    '  /winter fallen immer|kurz|aus   Schnee und Blätter fallen immer, ein paar Sekunden nach jeder Änderung oder nie',
     '  /winter zurück               alle Vorschauen beenden',
     '',
     'Die englischen Wörter (date, weather, context, cheer, reset …) funktionieren ebenfalls.',
   ].join('\n'),
   date: (y, m, d) => `${d}.${m}.${y}`,
-  labels: { date: 'Datum', season: 'Jahreszeit', occasion: 'Anlass', model: 'Modell', weather: 'Wetter', context: 'Kontext', accessories: 'Accessoires' },
+  labels: { date: 'Datum', season: 'Jahreszeit', occasion: 'Anlass', model: 'Modell', weather: 'Wetter', context: 'Kontext', accessories: 'Accessoires', falling: 'Fallen' },
   preview: '(Vorschau)',
   accessories: { hat: 'Mütze', scarf: 'Schal', broom: 'Besen und Fäustlinge', none: 'noch keine' },
   previewEnded: 'Vorschau beendet.',

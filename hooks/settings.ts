@@ -20,6 +20,9 @@ export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
  */
 export type Location = 'zurich' | 'basel' | 'bern' | 'lucerne' | 'other'
 
+/** How things fall: 'always', 'burst' (a few seconds after each change, then the sky clears) or 'off'. */
+export type FallingMode = 'always' | 'burst' | 'off'
+
 /** Languages of the texts in the scene and of the /winter command: 'en' or 'de'. */
 export type Language = 'en' | 'de'
 
@@ -43,6 +46,27 @@ export const SETTINGS = {
 
   /** On occasions the figure dresses up, e.g. a witch's hat on Halloween: true = on, false = off. */
   costumes: true,
+
+  /**
+   * Where the figure and the moon (or sun) stand, as a share of the window's
+   * width: 0 is the left edge, 1 the right edge. The defaults keep them in the
+   * free space beside the conversation.
+   */
+  layout: {
+    figureX: 0.27,
+    moonX: 0.8,
+  },
+
+  /**
+   * How snow, leaves and petals fall: 'always', 'burst' (they fall for
+   * burstSeconds after each change, such as the context filling or a click,
+   * and then the sky clears) or 'off'. "/backdrop falling burst" changes it
+   * and remembers your choice.
+   */
+  falling: {
+    mode: 'always' as FallingMode,
+    burstSeconds: 8,
+  },
 
   /** How many fir trees stand on the right (0 to 8). */
   trees: 3,

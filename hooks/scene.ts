@@ -16,6 +16,8 @@ export type SceneInput = {
   date: DateParts
   /** Shows this occasion whatever the date says (for previews). */
   occasion?: Occasion
+  /** Whether things fall, and after how many seconds they fade away (absent: they keep falling). */
+  fall?: { show: boolean; fadeAfter?: number }
   /** Set while a click effect plays: where the click landed (0 to 1). */
   click?: { x: number; y: number; seq: number }
 }
@@ -374,7 +376,7 @@ function celestial(clicked: boolean): string {
         <circle cx="-27" cy="8" r="6" class="cheek"/><circle cx="27" cy="8" r="6" class="cheek"/>
       </g>`
     : ''
-  return `<g transform="translate(1150 200)">
+  return `<g transform="translate(0 200)">
     <g class="sun"><circle r="58" class="halo"/><circle r="44" class="disc"/>${face}</g>
     <g class="moon"><circle r="46" class="disc"/><circle cx="-14" cy="12" r="7" class="crater"/><circle cx="16" cy="-14" r="5" class="crater"/>${face}</g>
   </g>`
@@ -966,6 +968,16 @@ function stNicholasDecor(): string {
   </g>`
 }
 
+/**
+ * A layer whose x = 0 sits at a share of the window's width and whose units
+ * scale with the window's height (1000 units = full height), so a subject keeps
+ * its place beside the conversation on any window.
+ */
+function pinned(share: number, align: 'xMidYMax' | 'xMidYMin', content: string): string {
+  const pct = (clamp(share) * 100).toFixed(1)
+  return `<svg x="${pct}%" y="0" width="0.1" height="100%" viewBox="-0.5 0 1 1000" preserveAspectRatio="${align} slice" overflow="visible">${content}</svg>`
+}
+
 // ── the whole scene ──────────────────────────────────────────────────────
 
 export function buildScene(input: SceneInput): string {
@@ -990,6 +1002,7 @@ export function buildScene(input: SceneInput): string {
   let extras = ''
   let sky2 = ''
   const magic = input.weather === 'magic' ? magicSky(seeded(31)) : ''
+  const fall = input.fall ?? { show: true }
   if (y.occasion === 'easter') extras += easterDecor()
   if (y.occasion === 'womensDay') extras += womensDayDecor()
   if (y.occasion === 'valentinesDay') extras += valentinesDecor()
@@ -1089,6 +1102,7 @@ export function buildScene(input: SceneInput): string {
   .bat { animation: bat 26s linear infinite; }
   .batwing { animation: flap 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 60%; }
   .glow { fill: #5a2a00; }
+  .fadeaway { animation: fadeaway 2.5s ease-in 1 both; }
   .heart { animation: rise 16s ease-in-out infinite; opacity: 0; }
   .balloon { animation: balloon 40s ease-in-out infinite alternate; }
   .firefly { fill: #fff27a; opacity: 0; animation: firefly 6s ease-in-out infinite; }
@@ -1124,6 +1138,7 @@ export function buildScene(input: SceneInput): string {
   @keyframes dove { from { transform: translate(-120px, 260px); } 50% { transform: translate(800px, 180px); } to { transform: translate(1750px, 240px); } }
   @keyframes bat { from { transform: translate(-80px, 0px); } 25% { transform: translate(400px, 40px); } 50% { transform: translate(800px, -20px); } 75% { transform: translate(1200px, 30px); } to { transform: translate(1700px, 0px); } }
   @keyframes flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
+  @keyframes fadeaway { from { opacity: 1; } to { opacity: 0; } }
   @keyframes rise { 0% { opacity: 0; transform: translate(0px, 0px); } 10% { opacity: 0.9; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translate(30px, -620px); } }
   @keyframes balloon { from { transform: translate(0px, 60px); } to { transform: translate(-120px, -320px); } }
   @keyframes firefly { 0%, 100% { opacity: 0; transform: translate(0px, 0px); } 50% { opacity: 0.25; transform: translate(14px, -10px); } }
@@ -1165,10 +1180,13 @@ export function buildScene(input: SceneInput): string {
 ${stars(seeded(11))}
 ${aurora}
 ${magic}
-<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>
 ${sky2}
 ${greeting}
+</svg>
+<!-- moon or sun, pinned to a share of the window width, scaled with its height -->
+${pinned(CFG.layout.moonX, 'xMidYMin', `<g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>`)}
 <!-- hills -->
+<svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
 <path class="far" d="M0 640 C 220 560 420 600 640 570 C 880 535 1100 600 1320 560 C 1450 540 1530 560 1600 575 L1600 1000 L0 1000 Z"/>
 ${pines(y, y.occasion, clicked, seeded(21))}
 <path class="near" d="M0 740 C 260 690 520 720 800 700 C 1080 680 1320 730 1600 705 L1600 1000 L0 1000 Z"/>
@@ -1176,13 +1194,11 @@ ${pines(y, y.occasion, clicked, seeded(21))}
 ${fog}
 ${extras}
 </svg>
-<!-- figure, pinned bottom left -->
-<svg width="100%" height="100%" viewBox="0 0 700 1000" preserveAspectRatio="xMinYMax meet">
-  <g transform="translate(290 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>
-</svg>
+<!-- figure, pinned to a share of the window width, scaled with its height -->
+${pinned(CFG.layout.figureX, 'xMidYMax', `<g transform="translate(0 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>`)}
 <!-- falling things, in front of the figure -->
 <svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
-<g>${particles(y, p, rand)}</g>
+${fall.show ? `<g${fall.fadeAfter !== undefined ? ` class="fadeaway" style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand)}</g>` : ''}
 ${input.click ? `<g>${gust(y, input.click, seeded(input.click.seq + 101))}</g>` : ''}
 </svg>
 <!-- label, pinned to a top corner in screen pixels -->

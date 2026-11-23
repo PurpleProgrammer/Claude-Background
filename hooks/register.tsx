@@ -4,7 +4,7 @@ import { t } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
 import { buildScene, occasionStart, yearState, type DateParts, type Mood } from './scene.js'
-import { SETTINGS, type Weather } from './settings.js'
+import { SETTINGS, type FallingMode, type Weather } from './settings.js'
 
 const SCENE = 'winter'
 
@@ -52,6 +52,9 @@ let click: { x: number; y: number; seq: number } | undefined
 let clickSeq = 0
 let mood: Mood | undefined
 let moodSeq = 0
+let fallingMode: FallingMode = SETTINGS.falling.mode
+let falling = true
+let fallSeq = 0
 
 /** Commands that run tests. */
 const TEST_COMMAND =
@@ -196,8 +199,36 @@ const WEATHER_WORDS: Record<string, Weather> = {
   zauber: 'magic',
 }
 const MOOD_WORDS: Record<string, Mood> = { cheer: 'cheer', jubel: 'cheer', fright: 'fright', schreck: 'fright' }
+const FALLING_WORDS: Record<string, FallingMode> = { always: 'always', immer: 'always', burst: 'burst', short: 'burst', kurz: 'burst', off: 'off', aus: 'off' }
 
 type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }
+
+/** Something happened: in burst mode, let things fall for a few seconds and then clear the sky. */
+function stir($: Clock$): void {
+  if (fallingMode !== 'burst') {
+    return
+  }
+  fallSeq += 1
+  const seq = fallSeq
+  falling = true
+  $.ui.invalidate('ui.render')
+  $.clock.after((SETTINGS.falling.burstSeconds + 3) * 1000, () => {
+    if (fallSeq === seq) {
+      falling = false
+      $.ui.invalidate('ui.render')
+    }
+  })
+}
+
+function fallFor(): { show: boolean; fadeAfter?: number } {
+  if (fallingMode === 'off') {
+    return { show: false }
+  }
+  if (fallingMode === 'burst') {
+    return falling ? { show: true, fadeAfter: SETTINGS.falling.burstSeconds } : { show: false }
+  }
+  return { show: true }
+}
 
 function feel($: Clock$, next: Mood): void {
   if (!SETTINGS.moods.enabled) {
@@ -206,6 +237,7 @@ function feel($: Clock$, next: Mood): void {
   moodSeq += 1
   const seq = moodSeq
   mood = next
+  stir($)
   $.ui.invalidate('ui.render')
   $.clock.after(SETTINGS.moods.seconds * 1000, () => {
     if (moodSeq === seq) {
@@ -227,6 +259,7 @@ function describe(): string {
     `${tx.labels.season}: ${tx.seasons[y.season]}${y.occasion ? ` · ${tx.labels.occasion}: ${tx.occasions[y.occasion]}` : ''}`,
     `${tx.labels.model}: ${prettyModel(modelId) || tx.unknownModel} · ${tx.labels.weather}: ${tx.weather[c.weather]}${mark(preview.weather !== undefined)}`,
     `${tx.labels.context}: ${tx.contextShare(Math.round(c.p))}${mark(preview.percent !== undefined)} · ${tx.labels.accessories}: ${acc.length > 0 ? acc.join(', ') : tx.accessories.none}`,
+    `${tx.labels.falling}: ${tx.falling[fallingMode]}`,
   ].join('\n')
 }
 
@@ -283,8 +316,22 @@ export const register: Register = on => {
     if (!set.isDrawn) {
       $.ui.status(set.reason)
     }
-    await $.command.register({ name: 'background', description: t().commandDescription })
-    await $.command.register({ name: 'winter', description: t().commandDescription })
+    try {
+      const stored = await $.store.get('fallingMode')
+      if (stored === 'always' || stored === 'burst' || stored === 'off') {
+        fallingMode = stored
+      }
+    } catch {
+      // Keep the mode from the settings.
+    }
+    for (const name of ['backdrop', 'winter']) {
+      try {
+        await $.command.register({ name, description: t().commandDescription })
+      } catch (error) {
+        $.ui.log(`interactive-background: /${name} could not be registered: ${String(error)}`)
+      }
+    }
+    stir($)
     // Look at the date now and then, so seasons and occasions change by themselves.
     $.clock.every(30 * 60 * 1000, () => {
       void refresh($).then(changed => {
@@ -299,23 +346,43 @@ export const register: Register = on => {
 
   on('command.run', { command: 'winter' }, async ($, e) => {
     await refresh($)
+    const words = e.args.trim().toLowerCase().split(/\s+/)
+    if ((words[0] === 'falling' || words[0] === 'fallen') && words[1] !== undefined && FALLING_WORDS[words[1]] !== undefined) {
+      fallingMode = FALLING_WORDS[words[1]] ?? fallingMode
+      await $.store.set('fallingMode', fallingMode).catch(() => undefined)
+      falling = true
+      stir($)
+      $.ui.invalidate('ui.render')
+      return { text: t().fallingSet(t().falling[fallingMode]) }
+    }
     const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
     if (asMood !== undefined) {
       feel($, asMood)
       return { text: asMood === 'cheer' ? t().cheer : t().fright }
     }
     const text = applyArgs(e.args)
+    stir($)
     $.ui.invalidate('ui.render')
     return { text }
   })
-  on('command.run', { command: 'background' }, async ($, e) => {
+  on('command.run', { command: 'backdrop' }, async ($, e) => {
     await refresh($)
+    const words = e.args.trim().toLowerCase().split(/\s+/)
+    if ((words[0] === 'falling' || words[0] === 'fallen') && words[1] !== undefined && FALLING_WORDS[words[1]] !== undefined) {
+      fallingMode = FALLING_WORDS[words[1]] ?? fallingMode
+      await $.store.set('fallingMode', fallingMode).catch(() => undefined)
+      falling = true
+      stir($)
+      $.ui.invalidate('ui.render')
+      return { text: t().fallingSet(t().falling[fallingMode]) }
+    }
     const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
     if (asMood !== undefined) {
       feel($, asMood)
       return { text: asMood === 'cheer' ? t().cheer : t().fright }
     }
     const text = applyArgs(e.args)
+    stir($)
     $.ui.invalidate('ui.render')
     return { text }
   })
@@ -327,6 +394,7 @@ export const register: Register = on => {
     percent = e.context.percent ?? percent
     await refresh($)
     if (before !== snapshot()) {
+      stir($)
       $.ui.invalidate('ui.render')
     }
     return result
@@ -359,6 +427,7 @@ export const register: Register = on => {
       clickSeq += 1
       const seq = clickSeq
       click = { x: e.x, y: e.y, seq }
+      stir($)
       $.ui.invalidate('ui.render')
       $.clock.after(SETTINGS.clickEffectSeconds * 1000, () => {
         if (click?.seq === seq) {
@@ -381,7 +450,7 @@ export const register: Register = on => {
 
     return (
       <Svg
-        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, click, mood })}
+        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, fall: fallFor(), click, mood })}
         alt={t().alt(t().seasons[y.season], Math.round(c.p), model)}
         isInteractive
       />
