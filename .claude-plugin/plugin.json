@@ -1,7 +1,7 @@
 {
   "name": "interactive-background",
-  "version": "0.6.0",
-  "description": "An interactive background for the Claude app: seasons, occasions, weather per model, and a figure that follows your context and reacts to your tests",
+  "version": "0.7.0",
+  "description": "An interactive background for the Claude app: seasons in both hemispheres, occasions from many countries and cultures, weather per model, five languages, and a figure that follows your context and reacts to your tests",
   "author": {
     "name": "PurpleProgrammer"
   },

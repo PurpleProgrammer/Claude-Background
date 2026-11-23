@@ -6,33 +6,15 @@
 
 ![A snowman cheering in a snowy night after passing tests](docs/images/hero.gif)
 
-A living background for the Claude app (desktop and mobile): a simple landscape that follows your session, the seasons and the calendar.
+A living background for the Claude app (desktop and mobile): a simple landscape that follows your session, the seasons and the calendar where you live.
 
 - **Context:** the fuller the context, the more snow (or leaves, petals) falls. The figure puts on a hat at 25 %, a scarf at 50 % and a broom with mittens at 75 %.
 - **Model:** the current model and how full the context is are shown top right. Each model has its own weather: Opus clear, Sonnet sunset (northern lights at night), Haiku fog, Fable magic (twinkling stars and shooting stars on a lilac sky).
 - **Moods:** passing tests make the figure cheer (arms up, hopping, confetti). Failing tests and errors give it a fright (wide eyes, hat pops up, a red “!”).
 - **Click the background:** a flurry, snow falls off the fir trees, and the moon or sun smiles.
-- **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn.
-- **Occasions and costumes:** 17 occasions, each with its own decoration, and the figure dresses up for many of them.
-
-| Occasion | Date | Decoration | Costume |
-|---|---|---|---|
-| Valentine's Day | 14 Feb | rising hearts | a rose |
-| Carnival | by town (Basel, Bern, Lucerne and the rest) | confetti and streamers | jester's hat |
-| International Women's Day | 8 Mar | mimosa, violet bunting | a mimosa sprig |
-| Easter | Good Friday to Easter Monday | eggs and a rabbit | bunny ears |
-| Sechseläuten | 3rd Monday in April, Zurich only | the Böögg on its pyre | |
-| Labour Day | 1 May | a maypole | |
-| Mother's Day | 2nd Sunday in May | tulips | a bouquet |
-| Ascension Day | Easter + 39 days | a hot-air balloon | |
-| Pentecost | Whit Sunday and Monday | a dove and peonies | |
-| Midsummer | 21 Jun | sunflowers, fireflies at night | sunglasses |
-| Swiss National Day | 31 Jul to 1 Aug | flag, lanterns, bonfire, fireworks | a Swiss flag |
-| Halloween | 30 to 31 Oct | jack-o'-lanterns and bats | witch's hat |
-| St Nicholas Day | 6 Dec | a sack with mandarins and nuts | mitre and beard |
-| Advent | 1 to 23 Dec | lights on the fir tree | |
-| Christmas | 24 to 26 Dec | star, lights and presents | Santa hat |
-| New Year's Eve, New Year | 31 Dec, 1 Jan | fireworks, a greeting | party hat |
+- **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn. In the southern hemisphere the seasons are mirrored.
+- **Occasions and costumes:** around 60 occasions from many countries and cultures, each with its own decoration, and the figure dresses up for many of them.
+- **Five languages:** English, German, French, Italian and Spanish.
 
 ## Gallery
 
@@ -42,7 +24,7 @@ A living background for the Claude app (desktop and mobile): a simple landscape 
 
 **Occasions and costumes**
 
-![All occasions with their decorations and costumes](docs/images/occasions.png)
+![Occasions with their decorations and costumes](docs/images/occasions.png)
 
 **Accessories as the context fills, and the moods**
 
@@ -68,15 +50,80 @@ In the desktop app, where `/plugin` does not run: click **+** next to the prompt
 
 The background shows in the desktop and mobile apps. The terminal draws no background. In portrait on a phone only the middle of the landscape fits.
 
-## Preview with `/backdrop`
+## Regions & occasions
 
-`/winter` is a short form and does the same. (`/background` is taken by the app itself.)
+The mod works out where you are from your system's time zone and locale, without any network access, and shows the occasions of that country. `/backdrop` tells you what it detected, for example `Region: CH (detected via Europe/Zurich)`. Anything you set by hand wins.
+
+> **Cloud sessions:** a cloud machine usually reports `UTC` and `en-US`, so it is detected as the United States. Run `/backdrop region CH` (with your own country code) once; the choice is remembered, and the days are then counted in that country's time zone.
+
+| Occasions | Shown in |
+|---|---|
+| New Year's Eve, New Year, Valentine's Day, International Women's Day, Halloween, summer solstice (21 June north, 21 December south) | everywhere |
+| Easter, Advent, Christmas | Europe, the Americas, Oceania and other countries where they are public holidays |
+| Orthodox Easter | GR, CY, RO, BG, RS, UA, RU, GE, MK, ME, BA, ET |
+| Carnival | CH (dates by town), DE, AT, BE, NL, LU, LI, IT, ES, PT, BR (Saturday to Tuesday) … |
+| Ascension, Pentecost | CH, LI, DE, AT, FR, BE, NL, LU, DK, NO, SE, FI |
+| Mother's Day, Father's Day | by country (2nd Sunday in May, Mothering Sunday, last Sunday in May in France, 10 May in Mexico …) |
+| Epiphany, St Patrick's Day, St Martin, St Nicholas (5 December in NL and BE), St Lucy, Midsummer, Boxing Day | the countries that keep them |
+| National days | CH, DE, AT, LI, FR, IT, ES, NL, US, CA, MX, BR, NZ, IN, PL, UA, NO; Australia Day only when switched on |
+| Thanksgiving, Labor Day in September | US, CA |
+| Guy Fawkes Night | GB |
+| Day of the Dead | MX |
+| Children's Day, Tanabata, cherry blossom season | JP |
+| Lunar New Year, Mid-Autumn Festival | CN, TW, HK, MO, SG, MY, VN (Lunar New Year also KR) |
+| Nowruz | IR, AF, AZ, TJ, KZ, UZ, KG, TM |
+| Ramadan, Eid al-Fitr, Eid al-Adha | countries with a Muslim majority |
+| Hanukkah | IL |
+| Diwali, Holi, Vesak | IN, NP and others (from published calendars 2026–2036; years without a firm date are left out) |
+| Kwanzaa | only with `extraOccasions` |
+
+Sechseläuten appears with `subdivision: 'CH-ZH'`. `/backdrop occasions` lists the occasions of your region with their next date.
+
+Islamic dates follow the Umm al-Qura calendar and can differ by a day from the day observed where you live.
+
+### Settings for regions
+
+| Setting | Values | What it does |
+|---|---|---|
+| `region` | `'auto'` or a country code (`'CH'`, `'DE'`, `'US'` …) | whose occasions are shown |
+| `subdivision` | `''` or e.g. `'CH-ZH'`, `'CH-BS'`, `'CH-BE'`, `'CH-LU'` | local customs such as carnival dates and Sechseläuten (never guessed) |
+| `timeZone` | `'auto'` or e.g. `'Europe/Zurich'` | which calendar day counts |
+| `hemisphere` | `'auto'`, `'north'`, `'south'` | which way the seasons run |
+| `snow` | `true` / `false` | `false`: no snowman, a summer figure all year, rain in winter |
+| `extraOccasions` | list of occasion ids | occasions from other regions or cultures as well |
+| `occasions` | `true` / `false` per occasion | switch single occasions on or off |
+
+Example: in Switzerland, also see Diwali and Hanukkah, but no Halloween:
+
+```ts
+region: 'CH',
+subdivision: 'CH-ZH',
+extraOccasions: ['diwali', 'hanukkah'],
+occasions: { ..., halloween: false },
+```
+
+### Add a country
+
+Pull requests are welcome. A new country usually needs only:
+
+1. **One entry** in [`hooks/occasions.ts`](hooks/occasions.ts): add the country code to an existing occasion's `regions` (or to a group such as `CHRISTMAS`), or add a new entry with its `days` rule. A national day only needs its colours in `NATIONAL_COLORS` in [`hooks/decor.ts`](hooks/decor.ts).
+2. **Its name in every language** in [`hooks/i18n.ts`](hooks/i18n.ts); the type check fails while one is missing.
+
+Dates that `Intl` cannot compute come from published calendars, with the source in a comment. Please do not estimate them.
+
+## Languages
+
+Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'fr'`, `'it'`, `'es'`, or `'auto'` for the language of your system. Names that differ by country are handled too (for example “Labor Day” in the US, “Fête nationale” in French-speaking Switzerland). Another language is welcome as a pull request: one more `Texts` object and its words in `WORDS`.
+
+## Commands
+
+`/backdrop` (short form `/winter`; `/background` is taken by the app itself). The words work in all five languages, accents optional.
 
 | Command | Effect |
 |---|---|
-| `/backdrop` | show the current state |
+| `/backdrop` | show the current state, including the region and where it was detected from |
 | `/backdrop summer` | preview a season: `winter`, `firstsnow`, `thaw`, `spring`, `summer`, `autumn` |
-| `/backdrop halloween` | preview an occasion: `valentine`, `carnival`, `womensday`, `easter`, `sechselaeuten`, `labourday`, `mothersday`, `ascension`, `pentecost`, `midsummer`, `nationalday`, `halloween`, `stnicholas`, `advent`, `christmas`, `newyearseve`, `newyear` |
+| `/backdrop halloween` | preview an occasion by its id or name, e.g. `easter`, `diwali`, `thanksgiving`, `lunarnewyear`, `kingsday` |
 | `/backdrop date 2027-03-20` | any date |
 | `/backdrop weather magic` | weather `clear`, `sunset`, `fog` or `magic` |
 | `/backdrop context 80` | simulate how full the context is |
@@ -84,30 +131,22 @@ The background shows in the desktop and mobile apps. The terminal draws no backg
 | `/backdrop falling burst` | snow and leaves fall only for a few seconds after each change, then the sky clears |
 | `/backdrop falling freeze` | the same, but everything stops in mid-air; `always` and `off` also work, and your choice is remembered |
 | `/backdrop figure 20` · `/backdrop moon 85` | move the figure or the moon (percent of the window width); `/backdrop layout reset` goes back to the settings |
+| `/backdrop region DE` · `/backdrop region auto` | show another country's occasions and remember it, or detect it again |
+| `/backdrop occasions` | list the occasions of your region with their next date |
 | `/backdrop reset` | end all previews |
+| `/backdrop help` | the help, in your language |
 
 ## Customising
 
-Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each:
-
-- `language`: `'en'` or `'de'` for all texts in the scene and in `/backdrop`
-- `label`: top right or top left, and the distance from the window's edges
-- `layout`: where the figure and the moon stand, as a share of the window's width (the app does not tell mods how wide its sidebar is, so this does not adapt by itself)
-- `falling`: whether things fall always, for a few seconds after each change and then clear or freeze, or never
-- `location`: your town (`zurich`, `basel`, `bern`, `lucerne` or `other`) for carnival dates and Sechseläuten
-- `costumes`: whether the figure dresses up on occasions
-- number of fir trees and size of the figure
-- colours of hat, pompom, scarf, mittens and broom
-- the context stages for the accessories
-- how many flakes fall with an empty and a full context
-- weather per model
-- how long click effects and moods last, and whether any error startles the figure
-- which occasions are shown
-- calendar dates for the first snow and the thaw
+Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each: language, label position, layout, falling mode, region settings (above), costumes, number of fir trees and size of the figure, colours of the accessories, context stages, number of flakes, weather per model, how long click effects and moods last, occasions, and the calendar of the first snow and the thaw.
 
 ## Development
 
-Every push and pull request runs `claude plugin validate .` and `claude plugin test .` on GitHub Actions ([workflow](.github/workflows/check.yml)). The badge at the top shows the latest result.
+Every push and pull request runs `claude plugin validate .` and `claude plugin test .` on GitHub Actions ([workflow](.github/workflows/check.yml)). The badge at the top shows the latest result. The tests include a day-by-day check that Switzerland keeps exactly the occasions it had before regions existed.
+
+The time zone table `hooks/zones.ts` is generated from the IANA database with `node scripts/make-zones.mjs`.
+
+**Open point:** `docs/images/occasions.png` still shows only the Swiss occasions and should be rendered again with the new ones.
 
 ## Credits
 
