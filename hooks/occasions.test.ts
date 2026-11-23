@@ -38,3 +38,13 @@ test('calendars from Intl, and no crash without them', () => {
   expect(fromCalendar('islamic-umalqura', 2027, 10, 1).map(fromDayNumber)).toEqual([{ y: 2027, m: 3, d: 9 }])
   expect(fromCalendar('nonexistent' as 'hebrew', 2027, 1, 1)).toEqual([])
 })
+
+test('the United States: Labor Day in September, no Swiss occasions', () => {
+  const us: OccasionContext = { region: 'US', subdivision: '', hemisphere: 'north', enabled: SETTINGS.occasions, extra: [] }
+  expect(occasionOn({ y: 2027, m: 9, d: 6 }, us)).toBe('labourDay')
+  expect(occasionOn({ y: 2027, m: 5, d: 1 }, us)).toBe(undefined)
+  expect(occasionOn({ y: 2027, m: 7, d: 4 }, us)).toBe('independenceDayUS')
+  expect(occasionOn({ y: 2027, m: 11, d: 25 }, us)).toBe('thanksgiving')
+  expect(occasionOn({ y: 2027, m: 8, d: 1 }, us)).toBe(undefined)
+  expect(occasionOn({ y: 2027, m: 5, d: 6 }, us)).toBe(undefined)
+})

@@ -72,6 +72,9 @@ type Texts = {
   fallingSet: (mode: string) => string
   layoutSet: (figure: number, moon: number) => string
   regionLine: (region: string, how: string, timeZone: string, hemisphere: string) => string
+  regionUsage: string
+  occasionsHeader: (region: string) => string
+  occasionsNone: string
   regionHow: { setting: string; zone: (zone: string) => string; locale: (locale: string) => string; legacy: string; none: string }
   layoutUsage: string
   contextShare: (percent: number) => string
@@ -161,6 +164,9 @@ const EN: Texts = {
   fallingSet: mode => `Falling: ${mode}. Remembered for your next sessions.`,
   layoutSet: (f, m) => `Figure at ${f} %, moon at ${m} % of the window width. Remembered for your next sessions.`,
   regionLine: (r, how, tz, h) => `Region: ${r} (${how}) · ${tz} · ${h === 'south' ? 'southern' : 'northern'} hemisphere`,
+  regionUsage: 'Usage: /backdrop region DE (a two-letter country code) or /backdrop region auto',
+  occasionsHeader: r => `Occasions in ${r}, with their next date:`,
+  occasionsNone: 'No occasions here.',
   regionHow: { setting: 'set', zone: z => `detected via ${z}`, locale: l => `detected from locale ${l}`, legacy: 'from the old location setting', none: 'not detected, global occasions only' },
   layoutUsage: 'Usage: /backdrop figure 20 · /backdrop moon 85 · /backdrop layout reset',
   contextShare: p => `${p}% context`,
@@ -184,6 +190,8 @@ const EN: Texts = {
     '                               for a few seconds then freeze in mid-air, or never',
     '  /winter figure 20 | moon 85  move the figure or the moon (percent of the window width)',
     '  /winter layout reset         back to the positions in the settings',
+    '  /winter region DE | auto     show the occasions of another country, or detect it again',
+    '  /winter occasions            list the occasions here with their next date',
     '  /winter reset                end all previews',
   ].join('\n'),
   date: (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
@@ -266,6 +274,9 @@ const DE: Texts = {
   fallingSet: mode => `Fallen: ${mode}. Wird für die nächsten Sitzungen gemerkt.`,
   layoutSet: (f, m) => `Figur bei ${f} %, Mond bei ${m} % der Fensterbreite. Wird für die nächsten Sitzungen gemerkt.`,
   regionLine: (r, how, tz, h) => `Region: ${r} (${how}) · ${tz} · ${h === 'south' ? 'Südhalbkugel' : 'Nordhalbkugel'}`,
+  regionUsage: 'Bitte so: /backdrop region DE (Ländercode mit zwei Buchstaben) oder /backdrop region auto',
+  occasionsHeader: r => `Anlässe in ${r}, mit ihrem nächsten Datum:`,
+  occasionsNone: 'Hier gibt es keine Anlässe.',
   regionHow: { setting: 'eingestellt', zone: z => `erkannt über ${z}`, locale: l => `erkannt über die Locale ${l}`, legacy: 'aus der alten Einstellung location', none: 'nicht erkannt, nur globale Anlässe' },
   layoutUsage: 'Bitte so: /backdrop figur 20 · /backdrop mond 85 · /backdrop layout zurück',
   contextShare: p => `${p} % Kontext`,
@@ -290,6 +301,8 @@ const DE: Texts = {
     '                               ein paar Sekunden und dann in der Luft stehen, oder nie',
     '  /winter figur 20 | mond 85   Figur oder Mond verschieben (Prozent der Fensterbreite)',
     '  /winter layout zurück        zurück zu den Positionen aus den Einstellungen',
+    '  /winter region DE | auto     Anlässe eines anderen Landes zeigen oder wieder erkennen',
+    '  /winter anlässe              die Anlässe hier mit ihrem nächsten Datum auflisten',
     '  /winter zurück               alle Vorschauen beenden',
     '',
     'Die englischen Wörter (date, weather, context, cheer, reset …) funktionieren ebenfalls.',

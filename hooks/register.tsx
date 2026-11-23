@@ -1,10 +1,10 @@
 import type { Register, ThemeSetArgs } from 'claude-code'
 
-import { occasionContext, region } from './context.js'
+import { chooseRegion, occasionContext, region } from './context.js'
 import { normalizeWord, t, WORDS, type Season } from './i18n.js'
 import { makeColors } from './make-colors.js'
 import type { Occasion } from './i18n.js'
-import { nextOccasionStart } from './occasions.js'
+import { dayNumber, isActive, nextOccasionStart, OCCASIONS } from './occasions.js'
 import { buildScene, yearState, type DateParts, type Mood } from './scene.js'
 import { SETTINGS, type FallingMode, type Weather } from './settings.js'
 
@@ -305,6 +305,19 @@ function describe(): string {
   ].join('\n')
 }
 
+/** The occasions that apply here, each with its next date, soonest first. */
+function occasionList(): string {
+  const tx = t()
+  const ctx = occasionContext()
+  const rows = OCCASIONS.filter(def => isActive(def, ctx))
+    .map(def => ({ id: def.id, next: nextOccasionStart(def.id, today, ctx) }))
+    .filter((row): row is { id: Occasion; next: DateParts } => row.next !== undefined)
+    .sort((a, b) => dayNumber(a.next.y, a.next.m, a.next.d) - dayNumber(b.next.y, b.next.m, b.next.d))
+    .map(row => `  ${tx.date(row.next.y, row.next.m, row.next.d)}  ${tx.occasions[row.id]}`)
+  const r = region()
+  return rows.length > 0 ? [tx.occasionsHeader(r.subdivision || r.region), ...rows].join('\n') : tx.occasionsNone
+}
+
 function applyArgs(args: string): string {
   const tx = t()
   const [cmd, value] = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
@@ -363,6 +376,10 @@ export const register: Register = on => {
       if (stored === 'always' || stored === 'burst' || stored === 'freeze' || stored === 'off') {
         fallingMode = stored
       }
+      const storedRegion = await $.store.get('region')
+      if (typeof storedRegion === 'string' && storedRegion !== '') {
+        chooseRegion(storedRegion)
+      }
       const place = (await $.store.get('layout')) as { figureX?: unknown; moonX?: unknown } | undefined
       if (place && typeof place.figureX === 'number' && typeof place.moonX === 'number') {
         layout = { figureX: place.figureX, moonX: place.moonX }
@@ -370,6 +387,8 @@ export const register: Register = on => {
     } catch {
       // Keep the mode from the settings.
     }
+    // The stored region can change the time zone, and so today's date.
+    await refresh($)
     for (const name of ['backdrop', 'winter']) {
       try {
         await $.command.register({ name, description: t().commandDescription })
@@ -400,6 +419,22 @@ export const register: Register = on => {
       stir($)
       $.ui.invalidate('ui.render')
       return { text: t().fallingSet(t().falling[fallingMode]) }
+    }
+    if (words[0] === 'region') {
+      const choice = words[1] ?? ''
+      if (choice !== 'auto' && !/^[a-z]{2}(-[a-z0-9]{1,3})?$/.test(choice)) {
+        return { text: t().regionUsage }
+      }
+      chooseRegion(choice === 'auto' ? undefined : choice)
+      await (choice === 'auto' ? $.store.delete('region') : $.store.set('region', choice.toUpperCase())).catch(() => undefined)
+      await refresh($)
+      stir($)
+      $.ui.invalidate('ui.render')
+      return { text: regionText() }
+    }
+    if (['occasions', 'anlässe', 'anlaesse', 'anlasse'].includes(words[0] ?? '')) {
+      await refresh($)
+      return { text: occasionList() }
     }
     const placeWord = words[0] ?? ''
     if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
@@ -443,6 +478,22 @@ export const register: Register = on => {
       stir($)
       $.ui.invalidate('ui.render')
       return { text: t().fallingSet(t().falling[fallingMode]) }
+    }
+    if (words[0] === 'region') {
+      const choice = words[1] ?? ''
+      if (choice !== 'auto' && !/^[a-z]{2}(-[a-z0-9]{1,3})?$/.test(choice)) {
+        return { text: t().regionUsage }
+      }
+      chooseRegion(choice === 'auto' ? undefined : choice)
+      await (choice === 'auto' ? $.store.delete('region') : $.store.set('region', choice.toUpperCase())).catch(() => undefined)
+      await refresh($)
+      stir($)
+      $.ui.invalidate('ui.render')
+      return { text: regionText() }
+    }
+    if (['occasions', 'anlässe', 'anlaesse', 'anlasse'].includes(words[0] ?? '')) {
+      await refresh($)
+      return { text: occasionList() }
     }
     const placeWord = words[0] ?? ''
     if (['figure', 'figur', 'moon', 'mond', 'layout', 'anordnung'].includes(placeWord)) {
