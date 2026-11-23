@@ -76,25 +76,46 @@ export type YearState = {
   figure: 'snowman' | 'remains' | 'scarecrow'
   season: Season
   occasion?: Occasion
-  /** Weights of the falling things: snow, petals, fluff, leaves. */
-  fall: { snow: number; petal: number; fluff: number; leaf: number }
+  /** Weights of the falling things: snow, rain, petals, fluff, leaves. */
+  fall: { snow: number; rain: number; petal: number; fluff: number; leaf: number }
 }
 
-export function yearState(date: DateParts, forced?: Occasion): YearState {
+/**
+ * The date the seasons are worked out from: six months on in the southern
+ * hemisphere, so the northern calendar in the settings mirrors by itself.
+ */
+export function seasonDate(date: DateParts, hemisphere: 'north' | 'south'): DateParts {
+  if (hemisphere === 'north') {
+    return date
+  }
+  const m = ((date.m + 5) % 12) + 1
+  const lastDay = new Date(Date.UTC(date.y, m, 0)).getUTCDate()
+  return { y: date.y, m, d: Math.min(date.d, lastDay) }
+}
+
+export function yearState(realDate: DateParts, forced?: Occasion): YearState {
+  const ctx = occasionContext()
+  // Occasions follow the real date; the seasons follow the hemisphere.
+  const date = seasonDate(realDate, ctx.hemisphere)
   const k = CFG.calendar
   const { m } = date
+  const snowy = CFG.snow
   const snowIn = ramp(date, k.snowStarts, k.snowComplete)
   const snowOut = ramp(date, k.thawStart, k.thawEnd)
   const inLateYear = m >= 9
-  const snow = inLateYear ? snowIn : 1 - snowOut
-  const build = inLateYear ? ramp(date, k.snowmanBuildStart, k.snowmanBuildEnd) : 1
-  const melt = inLateYear ? 0 : snowOut
+  // Without snow, the winter months bring rain instead.
+  const winterness = inLateYear ? snowIn : 1 - snowOut
+  const snow = snowy ? winterness : 0
+  const build = snowy ? (inLateYear ? ramp(date, k.snowmanBuildStart, k.snowmanBuildEnd) : 1) : 0
+  const melt = snowy ? (inLateYear ? 0 : snowOut) : 1
 
   // Leaves turn from September to mid October and stay until the snow covers them.
   const autumn = inLateYear ? ramp(date, [9, 1], [10, 15]) : 0
 
   let figure: YearState['figure']
-  if (inLateYear && build > 0) {
+  if (!snowy) {
+    figure = 'scarecrow'
+  } else if (inLateYear && build > 0) {
     figure = 'snowman'
   } else if (!inLateYear && melt < 1) {
     figure = 'snowman'
@@ -105,11 +126,11 @@ export function yearState(date: DateParts, forced?: Occasion): YearState {
   }
 
   let season: Season
-  if (snow >= 0.99) {
+  if (snow >= 0.99 || (!snowy && winterness >= 0.99)) {
     season = 'winter'
-  } else if (!inLateYear && melt > 0 && melt < 1) {
+  } else if (snowy && !inLateYear && melt > 0 && melt < 1) {
     season = 'thaw'
-  } else if (inLateYear && snow > 0) {
+  } else if (snowy && inLateYear && snow > 0) {
     season = 'firstSnow'
   } else if (m >= 3 && m <= 5) {
     season = 'spring'
@@ -121,15 +142,16 @@ export function yearState(date: DateParts, forced?: Occasion): YearState {
 
   const fall = {
     snow: snow,
-    petal: m >= 3 && m <= 5 ? 1 - snow : 0,
+    rain: snowy ? 0 : winterness,
+    petal: m >= 3 && m <= 5 ? 1 - winterness : 0,
     fluff: m >= 6 && m <= 8 ? 1 : 0,
-    leaf: inLateYear ? autumn * (1 - snow) : 0,
+    leaf: inLateYear ? autumn * (1 - winterness) : 0,
   }
-  if (fall.snow + fall.petal + fall.fluff + fall.leaf < 0.01) {
+  if (fall.snow + fall.rain + fall.petal + fall.fluff + fall.leaf < 0.01) {
     fall.fluff = 1
   }
 
-  return { snow, autumn, build, melt, figure, season, occasion: forced ?? occasionOn(date, occasionContext()), fall }
+  return { snow, autumn, build, melt, figure, season, occasion: forced ?? occasionOn(realDate, ctx), fall }
 }
 
 // ── colours ───────────────────────────────────────────────────────────────
@@ -168,8 +190,8 @@ function particles(y: YearState, percent: number, rand: () => number, shift = 0,
   const p = clamp(percent / 100)
   const count = Math.round(CFG.flakes.minimum + p * (CFG.flakes.maximum - CFG.flakes.minimum))
   const baseFall = 22 - p * 10
-  const w = kind === 'petal' ? { snow: 0, petal: 1, fluff: 0, leaf: 0 } : kind === 'leaf' ? { snow: 0, petal: 0, fluff: 0, leaf: 1 } : y.fall
-  const total = w.snow + w.petal + w.fluff + w.leaf
+  const w = kind === 'petal' ? { snow: 0, rain: 0, petal: 1, fluff: 0, leaf: 0 } : kind === 'leaf' ? { snow: 0, rain: 0, petal: 0, fluff: 0, leaf: 1 } : y.fall
+  const total = w.snow + w.rain + w.petal + w.fluff + w.leaf
   let out = ''
   for (let i = 0; i < count; i++) {
     const x = Math.round(rand() * 1600)
@@ -188,10 +210,12 @@ function particles(y: YearState, percent: number, rand: () => number, shift = 0,
       const r = (1.2 + rand() * 2.6).toFixed(1)
       const op = (0.55 + rand() * 0.45).toFixed(2)
       out += `<circle class="f s f${lane}" cx="${x}" cy="${yy}" r="${r}" opacity="${op}" style="animation-duration:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"/>`
-    } else if (pick < w.snow + w.petal) {
+    } else if (pick < w.snow + w.rain) {
+      out += `<path class="f f${lane} rain" d="M${x} ${yy} l-3 16" style="animation-duration:${(dur * 0.22).toFixed(2)}s;animation-delay:${(delay * 0.22).toFixed(2)}s"/>`
+    } else if (pick < w.snow + w.rain + w.petal) {
       const c = ['#f7b6c8', '#fbd3df', '#ffffff', '#f49ab5'][i % 4] ?? '#f7b6c8'
       out += `<g transform="translate(${x} ${yy})"><ellipse class="f l${lane}" rx="4.5" ry="2.6" fill="${c}" style="animation-duration:${(dur * 1.3).toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"/></g>`
-    } else if (pick < w.snow + w.petal + w.fluff) {
+    } else if (pick < w.snow + w.rain + w.petal + w.fluff) {
       out += `<circle class="f f${lane} fluff" cx="${x}" cy="${yy}" r="2.2" style="animation-duration:${(dur * 1.6).toFixed(1)}s;animation-delay:${delay.toFixed(1)}s"/>`
     } else {
       const c = ['#d35400', '#e67e22', '#b03a2e', '#a0522d', '#d4a017'][i % 5] ?? '#d35400'
@@ -962,6 +986,7 @@ export function buildScene(input: SceneInput): string {
   .face { animation: fadein 0.8s ease-out both; }
   .f { animation-name: fall0; animation-timing-function: linear; animation-iteration-count: infinite; }
   .s { fill: #ffffff; stroke: #7f9fbd; stroke-width: 1; }
+  .rain { stroke: #7fa7c9; stroke-width: 1.6; stroke-linecap: round; opacity: 0.7; }
   .fluff { fill: #fffbe6; stroke: #c9b97a; stroke-width: 0.8; }
   .f1 { animation-name: fall1; } .f2 { animation-name: fall2; }
   .l0 { animation-name: leaf0; } .l1 { animation-name: leaf1; } .l2 { animation-name: leaf2; }
