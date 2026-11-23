@@ -9,3 +9,4 @@
 - Dates that Intl cannot compute come from published calendars, with the sources in a comment; never estimate them.
 - Settings a user may change live in `hooks/settings.ts`, each with a short English comment.
 - Before committing, run `claude plugin validate .` and `claude plugin test .`.
+- A release is a version bump in `.claude-plugin/plugin.json` plus a `## <version>` section in `CHANGELOG.md`; the release workflow creates the tag and the GitHub release when it reaches `main`.

@@ -1,0 +1,43 @@
+name: Release
+
+# Creates a tag and a GitHub release whenever main carries a version in
+# .claude-plugin/plugin.json that has no release yet. The release notes are
+# that version's section of CHANGELOG.md. So a release is: raise the version,
+# add its CHANGELOG section, push to main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version
+        id: version
+        run: echo "tag=v$(jq -r .version .claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release if it does not exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists already."
+            exit 0
+          fi
+          version="${TAG#v}"
+          # The CHANGELOG section of this version, up to the next heading.
+          awk -v v="$version" '$0 == "## " v {found=1; next} found && /^## / {exit} found' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "CHANGELOG.md has no section '## $version'; add one first." >&2
+            exit 1
+          fi
+          printf '\n## Install\n\n```\n/plugin install interactive-background --marketplace %s\n```\n' "$GITHUB_REPOSITORY" >> notes.md
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md

@@ -31,12 +31,14 @@ export const SETTINGS = {
   language: 'en' as 'auto' | 'en' | 'de' | 'fr' | 'it' | 'es',
 
   /**
-   * Where the model and context label sits: 'top-right' or 'top-left', and how
-   * far from the window's edges, in pixels. Raise offsetY if the app's title bar
-   * covers it.
+   * Where the model and context label sits: 'above-figure' (centred just above
+   * the snowman or scarecrow, so panels on the right cannot cover it),
+   * 'top-right' or 'top-left'. For the corners, offsetX and offsetY are the
+   * distance from the window's edges in pixels; raise offsetY if the app's
+   * title bar covers it.
    */
   label: {
-    position: 'top-right' as 'top-right' | 'top-left',
+    position: 'above-figure' as 'above-figure' | 'top-right' | 'top-left',
     offsetX: 24,
     offsetY: 56,
   },

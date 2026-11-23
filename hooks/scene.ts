@@ -954,9 +954,15 @@ export function buildScene(input: SceneInput): string {
   const sub = escapeXml(`${t().contextShare(Math.round(p))} · ${y.occasion ? t().occasions[y.occasion] : t().seasons[y.season]}`)
   // The label is drawn in screen pixels, so it keeps its size and corner on any window.
   const pillW = Math.round(Math.max(200, 40 + Math.max(label.length * 12.5, sub.length * 7.6)))
-  const right = CFG.label.position !== 'top-left'
-  const pillX = right ? -CFG.label.offsetX - pillW : CFG.label.offsetX
-  const pillY = CFG.label.offsetY
+  // Above the figure: centred on its share of the width, just above its hat
+  // (the figure grows with the window height, so this is a share of the height too).
+  const aboveFigure = CFG.label.position === 'above-figure'
+  const right = CFG.label.position === 'top-right'
+  const figureTop = (860 - clamp(CFG.figureSize, 0.6, 1.6) * 480) / 10
+  const anchorX = aboveFigure ? `${(clamp(input.layout?.figureX ?? CFG.layout.figureX) * 100).toFixed(1)}%` : right ? '100%' : '0'
+  const anchorY = aboveFigure ? `${Math.max(8, figureTop - 1).toFixed(1)}%` : '0'
+  const pillX = aboveFigure ? -Math.round(pillW / 2) : right ? -CFG.label.offsetX - pillW : CFG.label.offsetX
+  const pillY = aboveFigure ? -84 : CFG.label.offsetY
 
   const fog =
     input.weather === 'fog'
@@ -1129,8 +1135,8 @@ ${pinned(input.layout?.figureX ?? CFG.layout.figureX, 'xMidYMax', `<g transform=
 ${fall.show ? `<g class="${fall.paused ? 'frozen' : fall.fadeAfter !== undefined ? 'fadeaway' : ''}"${fall.fadeAfter !== undefined && !fall.paused ? ` style="animation-delay:${fall.fadeAfter}s"` : ''}>${particles(y, p, rand, fall.shift ?? 0, decor.particles)}</g>` : ''}
 ${input.click ? `<g>${gust(y, input.click, seeded(input.click.seq + 101))}</g>` : ''}
 </svg>
-<!-- label, pinned to a top corner in screen pixels -->
-<svg x="${right ? '100%' : '0'}" y="0" width="1" height="1" overflow="visible">
+<!-- label in screen pixels, above the figure or in a top corner -->
+<svg x="${anchorX}" y="${anchorY}" width="1" height="1" overflow="visible">
   <rect class="pill" x="${pillX}" y="${pillY}" width="${pillW}" height="72" rx="16"/>
   <text class="lbl" x="${pillX + 20}" y="${pillY + 34}">${label}</text>
   <text class="sub" x="${pillX + 20}" y="${pillY + 58}">${sub}</text>

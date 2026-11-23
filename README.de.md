@@ -9,7 +9,7 @@
 Ein lebendiger Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landschaft, die deiner Sitzung, den Jahreszeiten und dem Kalender deines Wohnorts folgt.
 
 - **Kontext:** Je voller der Kontext, desto mehr Schnee (oder Blätter, Blüten) fällt. Die Figur bekommt ab 25 % eine Mütze, ab 50 % einen Schal und ab 75 % Besen und Fäustlinge.
-- **Modell:** Oben rechts stehen das aktuelle Modell und der Kontext-Füllstand. Jedes Modell hat sein eigenes Wetter: Opus klar, Sonnet Abendrot (nachts Nordlicht), Haiku Nebel, Fable Zauber (funkelnde Sterne und Sternschnuppen am fliederfarbenen Himmel).
+- **Modell:** Direkt über der Figur stehen das aktuelle Modell und der Kontext-Füllstand. Jedes Modell hat sein eigenes Wetter: Opus klar, Sonnet Abendrot (nachts Nordlicht), Haiku Nebel, Fable Zauber (funkelnde Sterne und Sternschnuppen am fliederfarbenen Himmel).
 - **Stimmungen:** Bei bestandenen Tests jubelt die Figur (Arme hoch, Hüpfen, Konfetti). Bei fehlgeschlagenen Tests und Fehlern erschrickt sie (grosse Augen, die Mütze fliegt hoch, rotes „!“).
 - **Klick auf den Hintergrund:** Gestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
 - **Jahreszeiten mit Übergängen:** Im November wird der Schneemann gebaut, im März schmilzt er. Im Frühling blühen Blumen, im Sommer und Herbst steht eine Vogelscheuche. Auf der Südhalbkugel laufen die Jahreszeiten gespiegelt.
@@ -141,11 +141,11 @@ Setze `language` in [`hooks/settings.ts`](hooks/settings.ts) auf `'en'`, `'de'`,
 
 ## Anpassen
 
-Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Sprache, Position der Anzeige, Anordnung, Fall-Modus, Regionen (siehe oben), Verkleidungen, Anzahl Tannen und Grösse der Figur, Farben der Accessoires, Kontext-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und der Kalender für ersten Schnee und Tauwetter.
+Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Sprache, Position der Anzeige (über der Figur oder in einer oberen Ecke), Anordnung, Fall-Modus, Regionen (siehe oben), Verkleidungen, Anzahl Tannen und Grösse der Figur, Farben der Accessoires, Kontext-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und der Kalender für ersten Schnee und Tauwetter.
 
 ## Entwicklung
 
-Bei jedem Push und Pull Request führt GitHub Actions `claude plugin validate .` und `claude plugin test .` aus ([Workflow](.github/workflows/check.yml)). Das Badge oben zeigt das letzte Ergebnis. Die Tests prüfen unter anderem Tag für Tag, dass die Schweiz genau die Anlässe behält, die sie vor den Regionen hatte.
+Bei jedem Push und Pull Request führt GitHub Actions `claude plugin validate .` und `claude plugin test .` aus ([Workflow](.github/workflows/check.yml)). Ein Release entsteht automatisch, sobald `main` eine neue Version in `.claude-plugin/plugin.json` trägt, mit dem passenden Abschnitt aus `CHANGELOG.md` als Text ([Workflow](.github/workflows/release.yml)). Das Badge oben zeigt das letzte Ergebnis. Die Tests prüfen unter anderem Tag für Tag, dass die Schweiz genau die Anlässe behält, die sie vor den Regionen hatte.
 
 Die Zeitzonen-Tabelle `hooks/zones.ts` wird mit `node scripts/make-zones.mjs` aus der IANA-Datenbank erzeugt.
 

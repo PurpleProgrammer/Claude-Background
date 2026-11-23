@@ -2,6 +2,14 @@
 
 All notable changes to Interactive Background for Claude.
 
+## 1.0.0
+
+First public release.
+
+- The model and context label sits just above the figure, so panels that fold in on the right no longer cover it (`label.position`; the top corners are still available)
+- Releases are created automatically on GitHub when the version changes (`.github/workflows/release.yml`)
+- Everything from the versions below: regions and around 60 occasions from many countries and cultures, seasons in both hemispheres, five languages, moods, click effects, falling modes and the `/backdrop` command
+
 ## 0.8.0
 
 - `/backdrop language fr` switches the language of the texts and remembers it; `auto` follows the system again

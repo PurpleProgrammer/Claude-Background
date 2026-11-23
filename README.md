@@ -9,7 +9,7 @@
 A living background for the Claude app (desktop and mobile): a simple landscape that follows your session, the seasons and the calendar where you live.
 
 - **Context:** the fuller the context, the more snow (or leaves, petals) falls. The figure puts on a hat at 25 %, a scarf at 50 % and a broom with mittens at 75 %.
-- **Model:** the current model and how full the context is are shown top right. Each model has its own weather: Opus clear, Sonnet sunset (northern lights at night), Haiku fog, Fable magic (twinkling stars and shooting stars on a lilac sky).
+- **Model:** the current model and how full the context is are shown just above the figure. Each model has its own weather: Opus clear, Sonnet sunset (northern lights at night), Haiku fog, Fable magic (twinkling stars and shooting stars on a lilac sky).
 - **Moods:** passing tests make the figure cheer (arms up, hopping, confetti). Failing tests and errors give it a fright (wide eyes, hat pops up, a red “!”).
 - **Click the background:** a flurry, snow falls off the fir trees, and the moon or sun smiles.
 - **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn. In the southern hemisphere the seasons are mirrored.
@@ -139,11 +139,11 @@ Set `language` in [`hooks/settings.ts`](hooks/settings.ts) to `'en'`, `'de'`, `'
 
 ## Customising
 
-Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each: language, label position, layout, falling mode, region settings (above), costumes, number of fir trees and size of the figure, colours of the accessories, context stages, number of flakes, weather per model, how long click effects and moods last, occasions, and the calendar of the first snow and the thaw.
+Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for each: language, label position (above the figure or a top corner), layout, falling mode, region settings (above), costumes, number of fir trees and size of the figure, colours of the accessories, context stages, number of flakes, weather per model, how long click effects and moods last, occasions, and the calendar of the first snow and the thaw.
 
 ## Development
 
-Every push and pull request runs `claude plugin validate .` and `claude plugin test .` on GitHub Actions ([workflow](.github/workflows/check.yml)). The badge at the top shows the latest result. The tests include a day-by-day check that Switzerland keeps exactly the occasions it had before regions existed.
+Every push and pull request runs `claude plugin validate .` and `claude plugin test .` on GitHub Actions ([workflow](.github/workflows/check.yml)). A release is created automatically when `main` carries a new version in `.claude-plugin/plugin.json`, with that version's section of `CHANGELOG.md` as notes ([workflow](.github/workflows/release.yml)). The badge at the top shows the latest result. The tests include a day-by-day check that Switzerland keeps exactly the occasions it had before regions existed.
 
 The time zone table `hooks/zones.ts` is generated from the IANA database with `node scripts/make-zones.mjs`.
 
