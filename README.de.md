@@ -2,6 +2,10 @@
 
 [English](README.md) · **Deutsch**
 
+[![Check](https://github.com/PurpleProgrammer/claude-background/actions/workflows/check.yml/badge.svg)](https://github.com/PurpleProgrammer/claude-background/actions/workflows/check.yml)
+
+![Ein Schneemann jubelt in einer verschneiten Nacht über bestandene Tests](docs/images/hero.gif)
+
 Ein Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landschaft, die auf deine Sitzung reagiert.
 
 - **Kontext:** Je voller der Kontext, desto dichter fällt der Schnee. Der Schneemann bekommt ab 25 % eine Mütze, ab 50 % einen Schal und ab 75 % Besen und Fäustlinge.
@@ -10,6 +14,18 @@ Ein Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landscha
 - **Klick auf den Hintergrund:** Schneegestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
 - **Jahreszeiten mit Übergängen:** Im November wird der Schneemann gebaut, im März schmilzt er. Im Frühling blühen Blumen, im Sommer und Herbst steht eine Vogelscheuche.
 - **Anlässe:** Ostern, 1. August, Advent, Weihnachten, Silvester und Neujahr.
+
+## Galerie
+
+**Jahreszeiten, Wetter je Modell und Anlässe**
+
+![Winter, Tauwetter, Frühling, Sommer, Herbst und Weihnachten](docs/images/seasons.png)
+
+**Accessoires je nach Kontext und die Stimmungen**
+
+![Der Schneemann bei 10, 25, 50 und 75 Prozent Kontext, jubelnd und erschrocken](docs/images/stages-moods.png)
+
+Die Bildbeschriftungen sind englisch, weil die Bilder für beide READMEs dieselben sind.
 
 ## Installation
 
@@ -52,6 +68,10 @@ Die deutschen Wörter funktionieren immer, auch wenn die Sprache auf Englisch st
 ## Anpassen
 
 Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Sprache, Anzahl Tannen, Figurgrösse, Farben der Accessoires, Prozent-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und die Kalenderdaten für Schnee und Tauwetter.
+
+## Entwicklung
+
+Bei jedem Push und Pull Request führt GitHub Actions `claude plugin validate .` und `claude plugin test .` aus ([Workflow](.github/workflows/check.yml)). Das Badge oben zeigt das letzte Ergebnis.
 
 ## Herkunft
 

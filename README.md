@@ -2,6 +2,10 @@
 
 **English** · [Deutsch](README.de.md)
 
+[![Check](https://github.com/PurpleProgrammer/claude-background/actions/workflows/check.yml/badge.svg)](https://github.com/PurpleProgrammer/claude-background/actions/workflows/check.yml)
+
+![A snowman cheering in a snowy night after passing tests](docs/images/hero.gif)
+
 A background for the Claude app (desktop and mobile): a simple landscape that follows your session.
 
 - **Context:** the fuller the context, the heavier the snowfall. The snowman puts on a hat at 25 %, a scarf at 50 % and a broom with mittens at 75 %.
@@ -10,6 +14,16 @@ A background for the Claude app (desktop and mobile): a simple landscape that fo
 - **Click the background:** a snow flurry, snow falls off the fir trees, and the moon or sun smiles.
 - **Seasons with smooth transitions:** the snowman is built in November and melts in March. Flowers bloom in spring, and a scarecrow takes over in summer and autumn.
 - **Occasions:** Easter, Swiss National Day (1 August), Advent, Christmas, New Year's Eve and New Year.
+
+## Gallery
+
+**Seasons, weather per model and occasions**
+
+![Winter, thaw, spring, summer, autumn and Christmas](docs/images/seasons.png)
+
+**Accessories as the context fills, and the moods**
+
+![The snowman at 10, 25, 50 and 75 percent context, cheering and startled](docs/images/stages-moods.png)
 
 ## Installation
 
@@ -56,6 +70,10 @@ Every setting is in [`hooks/settings.ts`](hooks/settings.ts), with a comment for
 - how long click effects and moods last, and whether any error startles the figure
 - which occasions are shown
 - calendar dates for the first snow and the thaw
+
+## Development
+
+Every push and pull request runs `claude plugin validate .` and `claude plugin test .` on GitHub Actions ([workflow](.github/workflows/check.yml)). The badge at the top shows the latest result.
 
 ## Credits
 
