@@ -2,14 +2,15 @@ import type { Register, ThemeSetArgs } from 'claude-code'
 
 import { t } from './i18n.js'
 import { makeColors } from './make-colors.js'
-import { buildScene, easterSunday, yearState, type DateParts, type Mood } from './scene.js'
+import type { Occasion } from './i18n.js'
+import { buildScene, occasionStart, yearState, type DateParts, type Mood } from './scene.js'
 import { SETTINGS, type Weather } from './settings.js'
 
 const SCENE = 'winter'
 
 // Cool, snowy grays by day and a blue winter night.
 const { theme, problems } = makeColors({
-  label: 'Winter landscape',
+  label: 'Interactive background',
   roles: { accent: '#2f6a9a', danger: '#b23a3a', success: '#3f7d55', warning: '#a8721a', pro: '#6a55a0' },
   light: {
     gray: {
@@ -60,7 +61,7 @@ const TEST_COMMAND =
 const FAILED_SUMMARY = /\b[1-9]\d*\s+(failed|failing|failures?|errors?)\b|\bFAIL(ED)?\b/
 
 // Previews set with /winter; they last until /winter reset or a reload.
-const preview: { date?: DateParts; weather?: Weather; percent?: number } = {}
+const preview: { date?: DateParts; weather?: Weather; percent?: number; occasion?: Occasion } = {}
 
 /** "claude-opus-5-5" -> "Opus 5.5"; anything else stays as it is. */
 function prettyModel(id: string): string {
@@ -128,8 +129,9 @@ async function refresh($: Session$): Promise<boolean> {
   return before !== snapshot()
 }
 
-function current(): { p: number; date: DateParts; weather: Weather } {
+function current(): { p: number; date: DateParts; weather: Weather; occasion?: Occasion } {
   return {
+    occasion: preview.occasion,
     p: preview.percent ?? percent,
     date: preview.date ?? today,
     weather: preview.weather ?? weatherFor(modelId),
@@ -149,20 +151,39 @@ alias(['thaw', 'tauwetter', 'schmelze'], y => ({ y: y + 1, m: 3, d: 16 }))
 alias(['spring', 'frühling', 'fruehling'], y => ({ y: y + 1, m: 4, d: 25 }))
 alias(['summer', 'sommer'], y => ({ y: y + 1, m: 7, d: 15 }))
 alias(['autumn', 'fall', 'herbst'], y => ({ y: y + 1, m: 10, d: 20 }))
-alias(['womensday', 'tagderfrau', 'frauentag'], y => ({ y: y + 1, m: 3, d: 8 }))
-alias(['easter', 'ostern'], y => easterSunday(y + 1))
-alias(['labourday', 'laborday', 'mayday', 'tagderarbeit'], y => ({ y: y + 1, m: 5, d: 1 }))
-alias(['pentecost', 'whitsun', 'pfingsten'], y => {
-  const e = easterSunday(y + 1)
-  const p = new Date(Date.UTC(e.y, e.m - 1, e.d + 49))
-  return { y: p.getUTCFullYear(), m: p.getUTCMonth() + 1, d: p.getUTCDate() }
-})
-alias(['halloween'], y => ({ y: y + 1, m: 10, d: 31 }))
-alias(['nationalday', 'swissnationalday', 'august1', 'nationalfeiertag'], y => ({ y: y + 1, m: 8, d: 1 }))
-alias(['advent'], y => ({ y, m: 12, d: 6 }))
-alias(['christmas', 'weihnachten'], y => ({ y, m: 12, d: 24 }))
-alias(['newyearseve', 'silvester'], y => ({ y, m: 12, d: 31 }))
-alias(['newyear', 'neujahr'], y => ({ y: y + 1, m: 1, d: 1 }))
+const PREVIEW_OCCASIONS: Record<string, Occasion> = {}
+
+/** The next time an occasion comes round, counted from today. */
+function next(o: Occasion): (y: number) => DateParts {
+  return y => {
+    const now = Date.UTC(today.y, today.m - 1, today.d)
+    const thisYear = occasionStart(o, y)
+    return Date.UTC(thisYear.y, thisYear.m - 1, thisYear.d) >= now ? thisYear : occasionStart(o, y + 1)
+  }
+}
+function occasionAlias(words: string[], o: Occasion): void {
+  alias(words, next(o))
+  for (const w of words) {
+    PREVIEW_OCCASIONS[w] = o
+  }
+}
+occasionAlias(['valentine', 'valentinesday', 'valentinstag'], 'valentinesDay')
+occasionAlias(['carnival', 'fasnacht', 'fasching'], 'carnival')
+occasionAlias(['womensday', 'tagderfrau', 'frauentag'], 'womensDay')
+occasionAlias(['easter', 'ostern'], 'easter')
+occasionAlias(['sechselaeuten', 'sechseläuten', 'böögg', 'boeoegg'], 'sechselaeuten')
+occasionAlias(['labourday', 'laborday', 'mayday', 'tagderarbeit'], 'labourDay')
+occasionAlias(['mothersday', 'muttertag'], 'mothersDay')
+occasionAlias(['ascension', 'auffahrt'], 'ascension')
+occasionAlias(['pentecost', 'whitsun', 'pfingsten'], 'pentecost')
+occasionAlias(['midsummer', 'solstice', 'sonnenwende', 'sommersonnenwende'], 'solstice')
+occasionAlias(['nationalday', 'swissnationalday', 'august1', 'nationalfeiertag'], 'swissNationalDay')
+occasionAlias(['halloween'], 'halloween')
+occasionAlias(['stnicholas', 'nicholas', 'nikolaus', 'samichlaus'], 'stNicholas')
+occasionAlias(['advent'], 'advent')
+occasionAlias(['christmas', 'weihnachten'], 'christmas')
+occasionAlias(['newyearseve', 'silvester'], 'newYearsEve')
+occasionAlias(['newyear', 'neujahr'], 'newYear')
 
 const WEATHER_WORDS: Record<string, Weather> = {
   clear: 'clear',
@@ -197,7 +218,7 @@ function feel($: Clock$, next: Mood): void {
 function describe(): string {
   const tx = t()
   const c = current()
-  const y = yearState(c.date)
+  const y = yearState(c.date, c.occasion)
   const st = SETTINGS.stages
   const acc = [c.p >= st.hat && tx.accessories.hat, c.p >= st.scarf && tx.accessories.scarf, c.p >= st.broom && tx.accessories.broom].filter(Boolean)
   const mark = (on: boolean): string => (on ? ` ${tx.preview}` : '')
@@ -222,6 +243,7 @@ function applyArgs(args: string): string {
     delete preview.date
     delete preview.weather
     delete preview.percent
+    delete preview.occasion
     return `${tx.previewEnded}\n${describe()}`
   }
   if ((cmd === 'date' || cmd === 'datum') && value !== undefined) {
@@ -230,6 +252,7 @@ function applyArgs(args: string): string {
       return tx.dateUsage
     }
     preview.date = { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) }
+    delete preview.occasion
     return describe()
   }
   if ((cmd === 'weather' || cmd === 'wetter') && value !== undefined && WEATHER_WORDS[value] !== undefined) {
@@ -243,6 +266,7 @@ function applyArgs(args: string): string {
   const season = PREVIEW_DATES[cmd]
   if (season !== undefined) {
     preview.date = season(today.y)
+    preview.occasion = PREVIEW_OCCASIONS[cmd]
     return describe()
   }
   return `${tx.unknown(args.trim())}\n\n${tx.help}`
@@ -259,6 +283,7 @@ export const register: Register = on => {
     if (!set.isDrawn) {
       $.ui.status(set.reason)
     }
+    await $.command.register({ name: 'background', description: t().commandDescription })
     await $.command.register({ name: 'winter', description: t().commandDescription })
     // Look at the date now and then, so seasons and occasions change by themselves.
     $.clock.every(30 * 60 * 1000, () => {
@@ -273,6 +298,17 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'winter' }, async ($, e) => {
+    await refresh($)
+    const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
+    if (asMood !== undefined) {
+      feel($, asMood)
+      return { text: asMood === 'cheer' ? t().cheer : t().fright }
+    }
+    const text = applyArgs(e.args)
+    $.ui.invalidate('ui.render')
+    return { text }
+  })
+  on('command.run', { command: 'background' }, async ($, e) => {
     await refresh($)
     const asMood = MOOD_WORDS[e.args.trim().toLowerCase()]
     if (asMood !== undefined) {
@@ -340,12 +376,12 @@ export const register: Register = on => {
     }
     const { Svg } = $.ui.resolve(e)
     const c = current()
-    const y = yearState(c.date)
+    const y = yearState(c.date, c.occasion)
     const model = prettyModel(modelId)
 
     return (
       <Svg
-        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, click, mood })}
+        source={buildScene({ percent: c.p, modelLabel: model, weather: c.weather, date: c.date, occasion: c.occasion, click, mood })}
         alt={t().alt(t().seasons[y.season], Math.round(c.p), model)}
         isInteractive
       />

@@ -14,6 +14,8 @@ export type SceneInput = {
   modelLabel: string
   weather: Weather
   date: DateParts
+  /** Shows this occasion whatever the date says (for previews). */
+  occasion?: Occasion
   /** Set while a click effect plays: where the click landed (0 to 1). */
   click?: { x: number; y: number; seq: number }
 }
@@ -98,7 +100,7 @@ export type YearState = {
   fall: { snow: number; petal: number; fluff: number; leaf: number }
 }
 
-export function yearState(date: DateParts): YearState {
+export function yearState(date: DateParts, forced?: Occasion): YearState {
   const k = CFG.calendar
   const { m } = date
   const snowIn = ramp(date, k.snowStarts, k.snowComplete)
@@ -147,7 +149,65 @@ export function yearState(date: DateParts): YearState {
     fall.fluff = 1
   }
 
-  return { snow, autumn, build, melt, figure, season, occasion: occasionOn(date), fall }
+  return { snow, autumn, build, melt, figure, season, occasion: forced ?? occasionOn(date), fall }
+}
+
+function fromDayNumber(n: number): DateParts {
+  const t = new Date(n * 86400000)
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }
+}
+
+/** The day number of the nth given weekday (0 = Sunday) of a month. */
+function nthWeekday(y: number, m: number, weekday: number, n: number): number {
+  const first = dayNumber(y, m, 1)
+  const firstWeekday = new Date(first * 86400000).getUTCDay()
+  return first + ((weekday - firstWeekday + 7) % 7) + (n - 1) * 7
+}
+
+/** First and last day of carnival in the year, by the town in the settings (Easter-relative). */
+function carnivalDays(y: number): [number, number] {
+  const e = easterSunday(y)
+  const easter = dayNumber(e.y, e.m, e.d)
+  if (CFG.location === 'basel') {
+    return [easter - 41, easter - 39] // Monday to Wednesday after Ash Wednesday
+  }
+  if (CFG.location === 'bern') {
+    return [easter - 43, easter - 41] // Thursday to Saturday after Ash Wednesday
+  }
+  return [easter - 52, easter - 47] // Schmutziger Donnerstag to Güdisdienstag
+}
+
+/** Zurich's spring festival: the third Monday in April, a week later when that is Easter Monday. */
+function sechselaeutenDay(y: number): number {
+  const e = easterSunday(y)
+  const third = nthWeekday(y, 4, 1, 3)
+  return third === dayNumber(e.y, e.m, e.d) + 1 ? third + 7 : third
+}
+
+/** The first day of each occasion in a year, for previews. */
+export function occasionStart(o: Occasion, y: number): DateParts {
+  const e = easterSunday(y)
+  const easter = dayNumber(e.y, e.m, e.d)
+  const days: Record<Occasion, number> = {
+    valentinesDay: dayNumber(y, 2, 14),
+    carnival: carnivalDays(y)[0],
+    womensDay: dayNumber(y, 3, 8),
+    easter,
+    sechselaeuten: sechselaeutenDay(y),
+    labourDay: dayNumber(y, 5, 1),
+    mothersDay: nthWeekday(y, 5, 0, 2),
+    ascension: easter + 39,
+    pentecost: easter + 49,
+    solstice: dayNumber(y, 6, 21),
+    swissNationalDay: dayNumber(y, 8, 1),
+    halloween: dayNumber(y, 10, 31),
+    stNicholas: dayNumber(y, 12, 6),
+    advent: dayNumber(y, 12, 1),
+    christmas: dayNumber(y, 12, 24),
+    newYearsEve: dayNumber(y, 12, 31),
+    newYear: dayNumber(y, 1, 1),
+  }
+  return fromDayNumber(days[o])
 }
 
 export function occasionOn(date: DateParts): Occasion | undefined {
@@ -156,23 +216,45 @@ export function occasionOn(date: DateParts): Occasion | undefined {
   const today = dayNumber(y, m, d)
   const e = easterSunday(y)
   const easter = dayNumber(e.y, e.m, e.d)
+  const [carnivalFrom, carnivalTo] = carnivalDays(y)
+  if (on.carnival && today >= carnivalFrom && today <= carnivalTo) {
+    return 'carnival'
+  }
   if (on.easter && today >= easter - 2 && today <= easter + 1) {
     return 'easter'
+  }
+  if (on.ascension && today === easter + 39) {
+    return 'ascension'
   }
   if (on.pentecost && today >= easter + 49 && today <= easter + 50) {
     return 'pentecost'
   }
+  if (on.valentinesDay && m === 2 && d === 14) {
+    return 'valentinesDay'
+  }
   if (on.womensDay && m === 3 && d === 8) {
     return 'womensDay'
   }
+  if (on.sechselaeuten && CFG.location === 'zurich' && today === sechselaeutenDay(y)) {
+    return 'sechselaeuten'
+  }
   if (on.labourDay && m === 5 && d === 1) {
     return 'labourDay'
+  }
+  if (on.mothersDay && today === nthWeekday(y, 5, 0, 2)) {
+    return 'mothersDay'
+  }
+  if (on.solstice && m === 6 && d === 21) {
+    return 'solstice'
   }
   if (on.halloween && m === 10 && d >= 30) {
     return 'halloween'
   }
   if (on.swissNationalDay && ((m === 7 && d === 31) || (m === 8 && d === 1))) {
     return 'swissNationalDay'
+  }
+  if (on.stNicholas && m === 12 && d === 6) {
+    return 'stNicholas'
   }
   if (on.newYear && m === 12 && d === 31) {
     return 'newYearsEve'
@@ -420,6 +502,115 @@ function moodMarks(mood: Mood | undefined, top: number): string {
   return ''
 }
 
+
+// ── costumes: what the figure wears on occasions ─────────────────────────
+
+type Costume = { hat?: string; hand?: string; face?: string }
+
+function costumeFor(occasion: Occasion | undefined): Costume {
+  if (!CFG.costumes || occasion === undefined) {
+    return {}
+  }
+  switch (occasion) {
+    case 'halloween':
+      return { hat: 'witch' }
+    case 'christmas':
+      return { hat: 'santa' }
+    case 'stNicholas':
+      return { hat: 'mitre', face: 'beard' }
+    case 'easter':
+      return { hat: 'bunny' }
+    case 'newYearsEve':
+    case 'newYear':
+      return { hat: 'party' }
+    case 'carnival':
+      return { hat: 'jester' }
+    case 'swissNationalDay':
+      return { hand: 'flag' }
+    case 'valentinesDay':
+      return { hand: 'rose' }
+    case 'mothersDay':
+      return { hand: 'bouquet' }
+    case 'womensDay':
+      return { hand: 'mimosa' }
+    case 'solstice':
+      return { face: 'sunglasses' }
+    default:
+      return {}
+  }
+}
+
+/** A costume hat, its brim at (0, 0) and pointing up. */
+function costumeHat(kind: string): string {
+  switch (kind) {
+    case 'witch':
+      return `<ellipse cx="0" cy="-2" rx="76" ry="13" fill="#1f1a26"/>
+        <path d="M-36 -6 L10 -124 L22 -112 L36 -6 Z" fill="#2a2233"/>
+        <path d="M-34 -12 L35 -12 L33 -26 L-31 -26 Z" fill="#7b3fa0"/>
+        <rect x="-8" y="-28" width="16" height="18" rx="2" fill="none" stroke="#ffd54a" stroke-width="3"/>`
+    case 'santa':
+      return `<path d="M-44 -8 Q-30 -80 20 -86 Q60 -80 70 -30 L56 -26 Q48 -60 18 -60 Q-6 -50 44 -8 Z" fill="#c0392b"/>
+        <rect x="-50" y="-16" width="100" height="20" rx="10" fill="#ffffff"/>
+        <circle cx="64" cy="-24" r="13" fill="#ffffff"/>`
+    case 'mitre':
+      return `<path d="M-38 -6 L-38 -54 Q-20 -104 0 -116 Q20 -104 38 -54 L38 -6 Z" fill="#c0392b"/>
+        <path d="M-38 -6 L38 -6 L38 -18 L-38 -18 Z M-5 -98 L5 -98 L5 -24 L-5 -24 Z" fill="#e8c34a"/>
+        <path d="M-16 -64 L16 -64 L16 -54 L-16 -54 Z" fill="#e8c34a"/>`
+    case 'bunny':
+      return `<path d="M-48 -4 Q0 -22 48 -4" stroke="#f4b6c6" stroke-width="8" fill="none"/>
+        <ellipse cx="-20" cy="-58" rx="13" ry="48" fill="#ffffff" stroke="#d8c8d0" stroke-width="2" transform="rotate(-12 -20 -58)"/>
+        <ellipse cx="22" cy="-58" rx="13" ry="48" fill="#ffffff" stroke="#d8c8d0" stroke-width="2" transform="rotate(14 22 -58)"/>
+        <ellipse cx="-20" cy="-58" rx="6" ry="34" fill="#f4b6c6" transform="rotate(-12 -20 -58)"/>
+        <ellipse cx="22" cy="-58" rx="6" ry="34" fill="#f4b6c6" transform="rotate(14 22 -58)"/>`
+    case 'party':
+      return `<path d="M-30 -4 L0 -100 L30 -4 Z" fill="#6bc5ff"/>
+        <path d="M-22 -28 L22 -28 L18 -42 L-18 -42 Z M-12 -62 L12 -62 L9 -74 L-9 -74 Z" fill="#ffd54a"/>
+        <circle cx="0" cy="-104" r="10" fill="#ff6b6b"/>`
+    case 'jester':
+      return `<path d="M-44 -4 Q-60 -70 -96 -60 Q-60 -40 -10 -40 Z" fill="#d52b1e"/>
+        <path d="M44 -4 Q60 -70 96 -60 Q60 -40 10 -40 Z" fill="#ffd54a"/>
+        <path d="M-40 -4 Q-20 -70 0 -76 Q20 -70 40 -4 Z" fill="#2f6a9a"/>
+        <circle cx="-98" cy="-58" r="9" fill="#e8c34a"/><circle cx="98" cy="-58" r="9" fill="#e8c34a"/><circle cx="0" cy="-80" r="9" fill="#e8c34a"/>
+        <rect x="-46" y="-14" width="92" height="14" rx="6" fill="#ffffff"/>`
+    default:
+      return ''
+  }
+}
+
+/** Something held in the hand at (x, y). */
+function handItem(kind: string, x: number, y: number): string {
+  switch (kind) {
+    case 'flag':
+      return `<g transform="translate(${x} ${y})"><path d="M0 0 L0 -110" stroke="#8a8a8a" stroke-width="4"/>
+        <rect x="2" y="-110" width="46" height="46" fill="#d52b1e"/><rect x="21" y="-102" width="9" height="30" fill="#ffffff"/><rect x="10" y="-91" width="30" height="9" fill="#ffffff"/></g>`
+    case 'rose':
+      return `<g transform="translate(${x} ${y})"><path d="M0 0 Q6 -40 2 -70" stroke="#3f7d3a" stroke-width="4" fill="none"/>
+        <path d="M2 -40 Q20 -50 22 -36 Q10 -34 2 -40 Z" fill="#3f7d3a"/>
+        <circle cx="2" cy="-78" r="14" fill="#c0392b"/><path d="M-6 -80 Q2 -90 10 -80" stroke="#8e1f1f" stroke-width="3" fill="none"/></g>`
+    case 'bouquet':
+      return `<g transform="translate(${x} ${y})"><path d="M-4 0 L-14 -60 M0 0 L0 -66 M4 0 L14 -60" stroke="#3f7d3a" stroke-width="3"/>
+        <circle cx="-14" cy="-66" r="11" fill="#f49ab5"/><circle cx="0" cy="-74" r="12" fill="#ffd54a"/><circle cx="14" cy="-66" r="11" fill="#b48cff"/>
+        <path d="M-12 -20 L12 -20 L4 4 L-4 4 Z" fill="#f4e3c3"/></g>`
+    case 'mimosa':
+      return `<g transform="translate(${x} ${y})"><path d="M0 0 Q4 -30 -6 -60 M2 -30 Q16 -44 22 -58" stroke="#5a7d3a" stroke-width="3" fill="none"/>
+        <circle cx="-6" cy="-64" r="7" fill="#ffd21f"/><circle cx="4" cy="-56" r="6" fill="#ffe14d"/><circle cx="-12" cy="-52" r="6" fill="#ffd21f"/><circle cx="22" cy="-62" r="7" fill="#ffe14d"/><circle cx="14" cy="-54" r="6" fill="#ffd21f"/></g>`
+    default:
+      return ''
+  }
+}
+
+/** Sunglasses or a beard, around eyes at (±ex, ey). */
+function costumeFace(kind: string, ex: number, ey: number): string {
+  if (kind === 'sunglasses') {
+    return `<rect x="${-ex - 15}" y="${ey - 10}" width="30" height="20" rx="8" fill="#1f1f24"/><rect x="${ex - 15}" y="${ey - 10}" width="30" height="20" rx="8" fill="#1f1f24"/>
+      <path d="M${-ex + 15} ${ey - 2} L${ex - 15} ${ey - 2}" stroke="#1f1f24" stroke-width="4"/>`
+  }
+  if (kind === 'beard') {
+    return `<path d="M-40 ${ey + 22} Q-44 ${ey + 80} 0 ${ey + 96} Q44 ${ey + 80} 40 ${ey + 22} Q20 ${ey + 40} 0 ${ey + 30} Q-20 ${ey + 40} -40 ${ey + 22} Z" fill="#ffffff" stroke="#c9ced6" stroke-width="3"/>`
+  }
+  return ''
+}
+
 function snowman(y: YearState, percent: number, mood?: Mood): string {
   const s = stage(percent)
   const b = y.build
@@ -466,7 +657,15 @@ function snowman(y: YearState, percent: number, mood?: Mood): string {
       face += broom(mood === undefined ? 158 : 200, mood === undefined ? -330 : -300, 10)
       face += `<circle cx="${hand.l[0]}" cy="${hand.l[1]}" r="13" fill="${CFG.colors.mittens}"/><circle cx="${hand.r[0]}" cy="${hand.r[1]}" r="13" fill="${CFG.colors.mittens}"/>`
     }
-    if (s.hat) face += `<g class="${mood === 'fright' ? 'hatpop' : ''}">${beanie(0, -366, m * 25)}</g>`
+    const costume = costumeFor(y.occasion)
+    if (costume.face !== undefined) face += costumeFace(costume.face, 16, -342)
+    if (costume.hand !== undefined) face += handItem(costume.hand, hand.r[0] ?? 150, hand.r[1] ?? -280)
+    const hatClass = mood === 'fright' ? 'hatpop' : ''
+    if (costume.hat !== undefined) {
+      face += `<g class="${hatClass}"><g transform="translate(0 -370) rotate(${m * 25})">${costumeHat(costume.hat)}</g></g>`
+    } else if (s.hat) {
+      face += `<g class="${hatClass}">${beanie(0, -366, m * 25)}</g>`
+    }
     face += moodMarks(mood, -440)
   }
   const puddle = m > 0 ? `<ellipse cx="0" cy="4" rx="${Math.round(110 + 120 * m)}" ry="${Math.round(10 + 14 * m)}" class="puddle"/>` : ''
@@ -497,7 +696,7 @@ function flowers(): string {
     .join('')
 }
 
-function scarecrow(percent: number, mood?: Mood): string {
+function scarecrow(percent: number, mood?: Mood, occasion?: Occasion): string {
   const s = stage(percent)
   let out = `<ellipse cx="0" cy="0" rx="110" ry="14" fill="#000000" opacity="0.08"/>
     <rect x="-7" y="-380" width="14" height="384" fill="#7a5230"/>
@@ -509,7 +708,11 @@ function scarecrow(percent: number, mood?: Mood): string {
     <path d="M-20 -350 l10 10 M-10 -350 l-10 10 M10 -350 l10 10 M20 -350 l-10 10" stroke="#3a2a1a" stroke-width="4"/>
     ${mood === 'fright' ? '<ellipse cx="0" cy="-314" rx="8" ry="11" fill="#3a2a1a"/>' : mood === 'cheer' ? '<path d="M-22 -320 Q0 -294 22 -320 Z" fill="#3a2a1a"/>' : '<path d="M-22 -318 Q0 -304 22 -318" stroke="#3a2a1a" stroke-width="3" fill="none" stroke-dasharray="5 4"/>'}`
   if (s.scarf) out += `<path d="M-40 -300 L40 -300 L0 -262 Z" fill="${CFG.colors.scarf}"/><circle cx="-6" cy="-292" r="3" fill="#ffffff"/><circle cx="10" cy="-290" r="3" fill="#ffffff"/>`
-  if (s.hat) out += `<ellipse cx="0" cy="-376" rx="80" ry="14" fill="#d9b44a"/><path d="M-40 -378 Q-38 -420 0 -422 Q38 -420 40 -378 Z" fill="#e3c25a"/><rect x="-40" y="-392" width="80" height="10" fill="${CFG.colors.hat}"/>`
+  const costume = costumeFor(occasion)
+  if (costume.face !== undefined) out += costumeFace(costume.face, 15, -345)
+  if (costume.hand !== undefined) out += handItem(costume.hand, 165, -292)
+  if (costume.hat !== undefined) out += `<g transform="translate(0 -378)">${costumeHat(costume.hat)}</g>`
+  else if (s.hat) out += `<ellipse cx="0" cy="-376" rx="80" ry="14" fill="#d9b44a"/><path d="M-40 -378 Q-38 -420 0 -422 Q38 -420 40 -378 Z" fill="#e3c25a"/><rect x="-40" y="-392" width="80" height="10" fill="${CFG.colors.hat}"/>`
   out += moodMarks(mood, -450)
   if (s.broom) out += `<g transform="translate(-120 -300)"><ellipse cx="0" cy="0" rx="18" ry="12" fill="#1f1f24"/><circle cx="14" cy="-12" r="9" fill="#1f1f24"/><path d="M22 -12 L32 -9 L22 -7 Z" fill="#e0a800"/><circle cx="16" cy="-14" r="2" fill="#ffffff"/><path d="M-16 2 L-30 8" stroke="#1f1f24" stroke-width="5"/></g>`
   return out
@@ -659,11 +862,115 @@ function halloweenDecor(): string {
   return `${[0, 1, 2, 3].map(bat).join('')}${pumpkin(560, 890, 1.2)}${pumpkin(660, 915, 0.9)}${pumpkin(1060, 900, 1.1)}`
 }
 
+
+function heartPath(x: number, y: number, r: number): string {
+  return `M${x} ${y + r * 0.9} C ${x - r * 1.6} ${y - r * 0.2} ${x - r * 0.7} ${y - r * 1.4} ${x} ${y - r * 0.5} C ${x + r * 0.7} ${y - r * 1.4} ${x + r * 1.6} ${y - r * 0.2} ${x} ${y + r * 0.9} Z`
+}
+
+function valentinesDecor(): string {
+  // Hearts rising slowly from the meadow.
+  const rand = seeded(14)
+  let out = ''
+  for (let i = 0; i < 12; i++) {
+    const x = Math.round(380 + rand() * 900)
+    const r = 9 + rand() * 9
+    out += `<g transform="translate(${x} 900)"><path class="heart" d="${heartPath(0, 0, r)}" fill="${['#e0457e', '#f06fa0', '#c0392b'][i % 3] ?? '#e0457e'}" style="animation-delay:${(-rand() * 14).toFixed(1)}s"/></g>`
+  }
+  return out
+}
+
+function carnivalDecor(): string {
+  // Confetti and streamers.
+  const rand = seeded(19)
+  const cols = ['#d52b1e', '#ffd54a', '#2f6a9a', '#3f7d55', '#f49ab5', '#b48cff']
+  let out = ''
+  for (let i = 0; i < 70; i++) {
+    const x = Math.round(rand() * 1600)
+    const y = Math.round(rand() * 1000)
+    const dur = 12 + rand() * 8
+    out += `<rect class="f f${i % 3}" x="${x}" y="${y}" width="7" height="4" fill="${cols[i % 6] ?? '#ffd54a'}" style="animation-duration:${dur.toFixed(1)}s;animation-delay:${(-rand() * dur).toFixed(1)}s"/>`
+  }
+  for (let i = 0; i < 6; i++) {
+    const x = 470 + i * 120
+    const y = 870 + (i % 2) * 30
+    out += `<path d="M${x} ${y} q12 -18 24 0 t24 0 t24 0 t24 0" stroke="${cols[(i + 2) % 6] ?? '#d52b1e'}" stroke-width="4" fill="none" stroke-linecap="round"/>`
+  }
+  return out
+}
+
+function ascensionDecor(): string {
+  // A hot-air balloon slowly rising: Auffahrt means ascent.
+  return `<g class="balloon"><g transform="translate(980 430)">
+    <path d="M-60 -70 Q-64 -160 0 -164 Q64 -160 60 -70 Q50 -30 16 -6 L-16 -6 Q-50 -30 -60 -70 Z" fill="#d52b1e"/>
+    <path d="M-20 -162 Q-34 -90 -12 -6 M20 -162 Q34 -90 12 -6" stroke="#ffffff" stroke-width="10" fill="none"/>
+    <path d="M-14 -4 L-12 20 M14 -4 L12 20" stroke="#6b4a2f" stroke-width="2"/>
+    <rect x="-14" y="18" width="28" height="20" rx="3" fill="#8a5a2b"/>
+  </g></g>`
+}
+
+function mothersDayDecor(): string {
+  // A bed of tulips.
+  let out = ''
+  const cols = ['#e0457e', '#ffd54a', '#f06fa0', '#c0392b', '#b48cff']
+  for (let i = 0; i < 9; i++) {
+    const x = 860 + i * 34
+    const y = 905 + (i % 2) * 14
+    out += `<path d="M${x} ${y} L${x} ${y - 46}" stroke="#3f7d3a" stroke-width="4"/><path d="M${x} ${y - 20} Q${x + 18} ${y - 34} ${x + 14} ${y - 10} Z" fill="#3f7d3a"/>
+      <path d="M${x - 11} ${y - 46} L${x - 11} ${y - 64} L${x - 4} ${y - 56} L${x} ${y - 68} L${x + 4} ${y - 56} L${x + 11} ${y - 64} L${x + 11} ${y - 46} Q${x} ${y - 36} ${x - 11} ${y - 46} Z" fill="${cols[i % 5] ?? '#e0457e'}"/>`
+  }
+  return out
+}
+
+function sechselaeutenDecor(): string {
+  // The Böögg, a snowman on a pyre: the sooner its head bursts, the better the summer.
+  return `<g transform="translate(900 640)">
+    <path d="M-90 0 L-10 -150 L10 -150 L90 0 Z" fill="#a0784a"/>
+    <path d="M-80 -10 L80 -10 M-64 -40 L64 -40 M-48 -70 L48 -70 M-32 -100 L32 -100 M-18 -128 L18 -128" stroke="#7a5230" stroke-width="5"/>
+    <path class="fire" d="M-70 0 Q-80 -60 -40 -110 Q-36 -60 -14 -80 Q0 -40 20 -96 Q40 -50 50 -70 Q80 -40 70 0 Z" fill="#ff8c1a" opacity="0.85"/>
+    <rect x="-3" y="-260" width="6" height="110" fill="#7a5230"/>
+    <circle cx="0" cy="-190" r="30" fill="#ffffff" stroke="#c9d8e6" stroke-width="3"/>
+    <circle cx="0" cy="-240" r="22" fill="#ffffff" stroke="#c9d8e6" stroke-width="3"/>
+    <circle cx="-8" cy="-244" r="3" fill="#2b2b2b"/><circle cx="8" cy="-244" r="3" fill="#2b2b2b"/>
+    <rect x="-16" y="-276" width="32" height="14" fill="#222222"/><rect x="-24" y="-264" width="48" height="5" fill="#222222"/>
+  </g>`
+}
+
+function solsticeDecor(): string {
+  // Sunflowers in front, fireflies in the warm night.
+  const rand = seeded(23)
+  let out = ''
+  for (let i = 0; i < 5; i++) {
+    const x = 860 + i * 70
+    const y = 920
+    let petals = ''
+    for (let k = 0; k < 12; k++) {
+      const a = (Math.PI * 2 * k) / 12
+      petals += `<ellipse cx="${(x + Math.cos(a) * 18).toFixed(1)}" cy="${(y - 90 + Math.sin(a) * 18).toFixed(1)}" rx="9" ry="5" fill="#ffd21f" transform="rotate(${((a * 180) / Math.PI).toFixed(0)} ${(x + Math.cos(a) * 18).toFixed(1)} ${(y - 90 + Math.sin(a) * 18).toFixed(1)})"/>`
+    }
+    out += `<path d="M${x} ${y} L${x} ${y - 80}" stroke="#3f7d3a" stroke-width="5"/>${petals}<circle cx="${x}" cy="${y - 90}" r="12" fill="#6b4423"/>`
+  }
+  for (let i = 0; i < 24; i++) {
+    out += `<circle class="firefly" cx="${Math.round(200 + rand() * 1200)}" cy="${Math.round(560 + rand() * 300)}" r="3" style="animation-delay:${(-rand() * 6).toFixed(1)}s"/>`
+  }
+  return out
+}
+
+function stNicholasDecor(): string {
+  // A sack with mandarins, nuts and gingerbread, and a bundle of twigs.
+  return `<g transform="translate(600 880)">
+    <path d="M-40 0 Q-50 -50 -20 -70 L20 -70 Q50 -50 40 0 Z" fill="#8a6a3a"/>
+    <path d="M-22 -70 Q0 -60 22 -70" stroke="#5a4020" stroke-width="5" fill="none"/>
+    <circle cx="-10" cy="-78" r="10" fill="#f08a1c"/><circle cx="10" cy="-80" r="9" fill="#f5a03a"/><circle cx="0" cy="-90" r="7" fill="#8a5a2b"/>
+    <circle cx="62" cy="-6" r="10" fill="#f08a1c"/><circle cx="80" cy="-4" r="7" fill="#8a5a2b"/><circle cx="92" cy="-6" r="6" fill="#a0784a"/>
+    <path d="M-80 0 L-96 -110 M-76 0 L-84 -114 M-72 0 L-72 -112" stroke="#5a4020" stroke-width="3"/><path d="M-88 -30 L-68 -30" stroke="#c0392b" stroke-width="5"/>
+  </g>`
+}
+
 // ── the whole scene ──────────────────────────────────────────────────────
 
 export function buildScene(input: SceneInput): string {
   const p = clamp(input.percent, 0, 100)
-  const y = yearState(input.date)
+  const y = yearState(input.date, input.occasion)
   const rand = seeded(7)
   const clicked = input.click !== undefined
   const gl = ground('light', y)
@@ -676,7 +983,7 @@ export function buildScene(input: SceneInput): string {
   } else if (y.figure === 'remains') {
     figure = remains(p)
   } else {
-    figure = scarecrow(p, input.mood)
+    figure = scarecrow(p, input.mood, y.occasion)
   }
   const scale = clamp(CFG.figureSize, 0.6, 1.6).toFixed(2)
 
@@ -685,6 +992,13 @@ export function buildScene(input: SceneInput): string {
   const magic = input.weather === 'magic' ? magicSky(seeded(31)) : ''
   if (y.occasion === 'easter') extras += easterDecor()
   if (y.occasion === 'womensDay') extras += womensDayDecor()
+  if (y.occasion === 'valentinesDay') extras += valentinesDecor()
+  if (y.occasion === 'carnival') extras += carnivalDecor()
+  if (y.occasion === 'ascension') sky2 += ascensionDecor()
+  if (y.occasion === 'mothersDay') extras += mothersDayDecor()
+  if (y.occasion === 'sechselaeuten') extras += sechselaeutenDecor()
+  if (y.occasion === 'solstice') extras += solsticeDecor()
+  if (y.occasion === 'stNicholas') extras += stNicholasDecor()
   if (y.occasion === 'labourDay') extras += labourDayDecor()
   if (y.occasion === 'pentecost') {
     const p2 = pentecostDecor()
@@ -775,6 +1089,9 @@ export function buildScene(input: SceneInput): string {
   .bat { animation: bat 26s linear infinite; }
   .batwing { animation: flap 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 60%; }
   .glow { fill: #5a2a00; }
+  .heart { animation: rise 16s ease-in-out infinite; opacity: 0; }
+  .balloon { animation: balloon 40s ease-in-out infinite alternate; }
+  .firefly { fill: #fff27a; opacity: 0; animation: firefly 6s ease-in-out infinite; }
   .greet { font-family: sans-serif; font-size: 44px; font-weight: 700; fill: #c0392b; }
   .lbl { font-family: sans-serif; font-size: 22px; font-weight: 600; fill: #16324a; }
   .sub { font-family: sans-serif; font-size: 15px; fill: #3a5670; }
@@ -807,6 +1124,9 @@ export function buildScene(input: SceneInput): string {
   @keyframes dove { from { transform: translate(-120px, 260px); } 50% { transform: translate(800px, 180px); } to { transform: translate(1750px, 240px); } }
   @keyframes bat { from { transform: translate(-80px, 0px); } 25% { transform: translate(400px, 40px); } 50% { transform: translate(800px, -20px); } 75% { transform: translate(1200px, 30px); } to { transform: translate(1700px, 0px); } }
   @keyframes flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
+  @keyframes rise { 0% { opacity: 0; transform: translate(0px, 0px); } 10% { opacity: 0.9; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translate(30px, -620px); } }
+  @keyframes balloon { from { transform: translate(0px, 60px); } to { transform: translate(-120px, -320px); } }
+  @keyframes firefly { 0%, 100% { opacity: 0; transform: translate(0px, 0px); } 50% { opacity: 0.25; transform: translate(14px, -10px); } }
   @keyframes drift { from { transform: translate(-120px, 0px); } to { transform: translate(120px, 0px); } }
   @media (prefers-color-scheme: dark) {
     .sky0 { stop-color: ${sky.dark[0]}; } .sky1 { stop-color: ${sky.dark[1]}; } .sky2 { stop-color: ${sky.dark[2]}; }
@@ -826,6 +1146,7 @@ export function buildScene(input: SceneInput): string {
     .skytop { fill: ${sky.dark[0]}; }
     .glow { fill: #ffcf4a; }
     .spark { fill: #fff3a0; }
+    @keyframes firefly { 0%, 100% { opacity: 0.1; transform: translate(0px, 0px); } 50% { opacity: 1; transform: translate(14px, -10px); } }
     .lbl { fill: #eaf1f8; } .sub { fill: #b8c8da; }
     .pill { fill: #0f1724; opacity: 0.7; }
   }

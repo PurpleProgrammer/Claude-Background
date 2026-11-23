@@ -1,4 +1,4 @@
-# Winterlandschaft
+# Interactive Background for Claude
 
 [English](README.md) · **Deutsch**
 
@@ -6,20 +6,43 @@
 
 ![Ein Schneemann jubelt in einer verschneiten Nacht über bestandene Tests](docs/images/hero.gif)
 
-Ein Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landschaft, die auf deine Sitzung reagiert.
+Ein lebendiger Hintergrund für die Claude-App (Desktop und Mobil): eine schlichte Landschaft, die deiner Sitzung, den Jahreszeiten und dem Kalender folgt.
 
-- **Kontext:** Je voller der Kontext, desto dichter fällt der Schnee. Der Schneemann bekommt ab 25 % eine Mütze, ab 50 % einen Schal und ab 75 % Besen und Fäustlinge.
-- **Modell:** Oben rechts (oder oben links, siehe Einstellungen) stehen das aktuelle Modell und der Kontext-Füllstand. Jedes Modell hat sein eigenes Wetter: Opus klar, Sonnet Abendrot (nachts Nordlicht), Haiku Nebel, Fable Zauber (funkelnde Sterne und Sternschnuppen am fliederfarbenen Himmel).
-- **Stimmungen:** Bei bestandenen Tests jubelt der Schneemann (Arme hoch, Hüpfen, Konfetti). Bei fehlgeschlagenen Tests und Fehlern erschrickt er (grosse Augen, die Mütze fliegt hoch, rotes „!“).
-- **Klick auf den Hintergrund:** Schneegestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
+- **Kontext:** Je voller der Kontext, desto mehr Schnee (oder Blätter, Blüten) fällt. Die Figur bekommt ab 25 % eine Mütze, ab 50 % einen Schal und ab 75 % Besen und Fäustlinge.
+- **Modell:** Oben rechts stehen das aktuelle Modell und der Kontext-Füllstand. Jedes Modell hat sein eigenes Wetter: Opus klar, Sonnet Abendrot (nachts Nordlicht), Haiku Nebel, Fable Zauber (funkelnde Sterne und Sternschnuppen am fliederfarbenen Himmel).
+- **Stimmungen:** Bei bestandenen Tests jubelt die Figur (Arme hoch, Hüpfen, Konfetti). Bei fehlgeschlagenen Tests und Fehlern erschrickt sie (grosse Augen, die Mütze fliegt hoch, rotes „!“).
+- **Klick auf den Hintergrund:** Gestöber, Schnee rieselt von den Tannen, Mond oder Sonne lächelt.
 - **Jahreszeiten mit Übergängen:** Im November wird der Schneemann gebaut, im März schmilzt er. Im Frühling blühen Blumen, im Sommer und Herbst steht eine Vogelscheuche.
-- **Anlässe:** Tag der Frau (Mimosen und violette Wimpelkette), Ostern, Tag der Arbeit (Maibaum), Pfingsten (Taube und Pfingstrosen), 1. August, Halloween (Kürbislaternen und Fledermäuse), Advent, Weihnachten, Silvester und Neujahr.
+- **Anlässe und Verkleidungen:** 17 Anlässe mit eigener Deko, und für viele davon verkleidet sich die Figur.
+
+| Anlass | Datum | Deko | Verkleidung |
+|---|---|---|---|
+| Valentinstag | 14. Feb. | aufsteigende Herzen | eine Rose |
+| Fasnacht | je nach Ort (Basel, Bern, Luzern und übrige Schweiz) | Konfetti und Luftschlangen | Narrenkappe |
+| Tag der Frau | 8. März | Mimosen, violette Wimpelkette | ein Mimosenzweig |
+| Ostern | Karfreitag bis Ostermontag | Eier und ein Osterhase | Hasenohren |
+| Sechseläuten | 3. Montag im April, nur in Zürich | der Böögg auf dem Scheiterhaufen | |
+| Tag der Arbeit | 1. Mai | ein Maibaum | |
+| Muttertag | 2. Sonntag im Mai | Tulpen | ein Blumenstrauss |
+| Auffahrt | Ostern + 39 Tage | ein Heissluftballon | |
+| Pfingsten | Pfingstsonntag und -montag | eine Taube und Pfingstrosen | |
+| Sommersonnenwende | 21. Juni | Sonnenblumen, nachts Glühwürmchen | Sonnenbrille |
+| 1. August | 31. Juli bis 1. August | Fahne, Lampions, Höhenfeuer, Feuerwerk | eine Schweizerfahne |
+| Halloween | 30. bis 31. Okt. | Kürbislaternen und Fledermäuse | Hexenhut |
+| St. Nikolaus | 6. Dez. | ein Sack mit Mandarinen und Nüssen | Mitra und Bart |
+| Advent | 1. bis 23. Dez. | Lichterkette an der Tanne | |
+| Weihnachten | 24. bis 26. Dez. | Stern, Lichter und Geschenke | Weihnachtsmütze |
+| Silvester, Neujahr | 31. Dez., 1. Jan. | Feuerwerk, Neujahrsgruss | Partyhut |
 
 ## Galerie
 
-**Jahreszeiten, Wetter je Modell und Anlässe**
+**Jahreszeiten und Wetter je Modell**
 
-![Winter, Tauwetter, Frühling, Sommer, Herbst und Weihnachten](docs/images/seasons.png)
+![Winter, Tauwetter, Frühling, Sommer, Herbst und eine Fable-Winternacht](docs/images/seasons.png)
+
+**Anlässe und Verkleidungen**
+
+![Alle Anlässe mit Deko und Verkleidungen](docs/images/occasions.png)
 
 **Accessoires je nach Kontext und die Stimmungen**
 
@@ -32,7 +55,7 @@ Die Bildbeschriftungen sind englisch, weil die Bilder für beide READMEs dieselb
 In einer Terminal-Sitzung von Claude Code:
 
 ```
-/plugin install winter-landscape --marketplace PurpleProgrammer/claude-background
+/plugin install interactive-background --marketplace PurpleProgrammer/claude-background
 ```
 
 Danach `y` drücken, um den Marketplace hinzuzufügen, und mit Enter den Bereich wählen.
@@ -40,34 +63,48 @@ Danach `y` drücken, um den Marketplace hinzuzufügen, und mit Enter den Bereich
 Aus einer Shell:
 
 ```bash
-claude plugin install winter-landscape --marketplace PurpleProgrammer/claude-background
+claude plugin install interactive-background --marketplace PurpleProgrammer/claude-background
 ```
 
 In der Desktop-App, wo `/plugin` nicht läuft: auf **+** neben dem Eingabefeld klicken, dann **Plugins**, **Add marketplace** mit `PurpleProgrammer/claude-background`, dann **Add plugin**.
 
-Der Hintergrund erscheint in der Desktop- und der Mobil-App. Im Terminal wird kein Hintergrund gezeichnet.
+Der Hintergrund erscheint in der Desktop- und der Mobil-App. Im Terminal wird kein Hintergrund gezeichnet. Auf dem Handy im Hochformat passt nur die Mitte der Landschaft auf den Bildschirm.
 
 ## Auf Deutsch umstellen
 
-In [`hooks/settings.ts`](hooks/settings.ts) `language: 'en'` durch `language: 'de'` ersetzen. Danach sind die Anzeige in der Szene und die Antworten von `/winter` deutsch.
+In [`hooks/settings.ts`](hooks/settings.ts) `language: 'en'` durch `language: 'de'` ersetzen. Danach sind die Anzeige in der Szene und die Antworten von `/background` deutsch.
 
-## Vorschau mit `/winter`
+## Vorschau mit `/background`
 
-Die deutschen Wörter funktionieren immer, auch wenn die Sprache auf Englisch steht.
+`/winter` ist die Kurzform und macht dasselbe. Die deutschen Wörter funktionieren immer, auch wenn die Sprache auf Englisch steht.
 
 | Befehl | Wirkung |
 |---|---|
-| `/winter` | zeigt den aktuellen Zustand |
-| `/winter ostern` | Jahreszeit oder Anlass ansehen: `winter`, `ersterschnee`, `tauwetter`, `frühling`, `sommer`, `herbst`, `tagderfrau`, `ostern`, `tagderarbeit`, `pfingsten`, `nationalfeiertag`, `halloween`, `advent`, `weihnachten`, `silvester`, `neujahr` |
-| `/winter datum 2027-03-20` | beliebiges Datum |
-| `/winter wetter nebel` | Wetter `klar`, `abendrot`, `nebel` oder `zauber` |
-| `/winter kontext 80` | Kontext-Füllstand simulieren |
-| `/winter jubel` · `/winter schreck` | Figur jubeln oder erschrecken lassen |
-| `/winter zurück` | Vorschau beenden |
+| `/background` | zeigt den aktuellen Zustand |
+| `/background sommer` | Jahreszeit ansehen: `winter`, `ersterschnee`, `tauwetter`, `frühling`, `sommer`, `herbst` |
+| `/background halloween` | Anlass ansehen: `valentinstag`, `fasnacht`, `tagderfrau`, `ostern`, `sechseläuten`, `tagderarbeit`, `muttertag`, `auffahrt`, `pfingsten`, `sonnenwende`, `nationalfeiertag`, `halloween`, `nikolaus`, `advent`, `weihnachten`, `silvester`, `neujahr` |
+| `/background datum 2027-03-20` | beliebiges Datum |
+| `/background wetter zauber` | Wetter `klar`, `abendrot`, `nebel` oder `zauber` |
+| `/background kontext 80` | Kontext-Füllstand simulieren |
+| `/background jubel` · `/background schreck` | Figur jubeln oder erschrecken lassen |
+| `/background zurück` | Vorschau beenden |
 
 ## Anpassen
 
-Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts): Sprache, Position der Modellanzeige (oben rechts oder links, Abstand zum Rand), Anzahl Tannen, Figurgrösse, Farben der Accessoires, Prozent-Stufen, Flockenmenge, Wetter je Modell, Dauer von Klick-Effekten und Stimmungen, Anlässe und die Kalenderdaten für Schnee und Tauwetter.
+Alle Einstellungen stehen mit Kommentaren in [`hooks/settings.ts`](hooks/settings.ts):
+
+- `language`: `'en'` oder `'de'` für alle Texte in der Szene und in `/background`
+- `label`: oben rechts oder oben links, und der Abstand zum Fensterrand
+- `location`: dein Ort (`zurich`, `basel`, `bern`, `lucerne` oder `other`) für die Fasnachtsdaten und das Sechseläuten
+- `costumes`: ob sich die Figur an Anlässen verkleidet
+- Anzahl Tannen und Grösse der Figur
+- Farben von Mütze, Bommel, Schal, Fäustlingen und Besen
+- die Kontext-Stufen der Accessoires
+- wie viele Flocken bei leerem und vollem Kontext fallen
+- Wetter je Modell
+- Dauer von Klick-Effekten und Stimmungen, und ob jeder Fehler die Figur erschreckt
+- welche Anlässe gezeigt werden
+- Kalenderdaten für den ersten Schnee und das Tauwetter
 
 ## Entwicklung
 

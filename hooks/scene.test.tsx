@@ -4,10 +4,10 @@ test('the backdrop draws the scene and /winter previews an occasion', async $ =>
   const out = await $.command.run({ command: 'winter', args: 'easter' } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(out)).toContain('Easter')
   const ui = await $.ui.mount({
-    plugin: 'winter-landscape',
+    plugin: 'interactive-background',
     surface: 'desktop',
     component: 'Backdrop',
-    props: { scene: 'winter', plugin: 'winter-landscape', glass: false },
+    props: { scene: 'winter', plugin: 'interactive-background', glass: false },
   })
   const svg = await ui.find({ type: 'Svg' })
   const src = String((svg as { props?: { source?: string } } | undefined)?.props?.source ?? '')
@@ -23,6 +23,16 @@ test('new occasions and Fable weather can be previewed', async $ => {
   expect(JSON.stringify(await run('labourday'))).toContain('Labour Day')
   expect(JSON.stringify(await run('womensday'))).toContain("Women's Day")
   expect(JSON.stringify(await run('weather magic'))).toContain('magic')
+})
+
+test('more occasions, local customs and /background', async $ => {
+  const run = (command: string, args: string) => $.command.run({ command, args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('background', 'fasnacht'))).toContain('Carnival')
+  expect(JSON.stringify(await run('background', 'sechseläuten'))).toContain('Sechseläuten')
+  expect(JSON.stringify(await run('background', 'auffahrt'))).toContain('Ascension Day')
+  expect(JSON.stringify(await run('winter', 'muttertag'))).toContain("Mother's Day")
+  expect(JSON.stringify(await run('winter', 'nikolaus'))).toContain('St Nicholas Day')
+  expect(JSON.stringify(await run('winter', 'summer'))).toContain('Summer')
 })
 
 test('German words work too', async $ => {

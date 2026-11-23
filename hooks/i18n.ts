@@ -4,12 +4,19 @@ import { SETTINGS, type Language, type Weather } from './settings.js'
 
 export type Season = 'winter' | 'thaw' | 'firstSnow' | 'spring' | 'summer' | 'autumn'
 export type Occasion =
+  | 'valentinesDay'
+  | 'carnival'
   | 'womensDay'
   | 'easter'
+  | 'sechselaeuten'
   | 'labourDay'
+  | 'mothersDay'
+  | 'ascension'
   | 'pentecost'
+  | 'solstice'
   | 'swissNationalDay'
   | 'halloween'
+  | 'stNicholas'
   | 'advent'
   | 'christmas'
   | 'newYearsEve'
@@ -40,11 +47,18 @@ type Texts = {
 const EN: Texts = {
   seasons: { winter: 'Winter', thaw: 'Thaw', firstSnow: 'First snow', spring: 'Spring', summer: 'Summer', autumn: 'Autumn' },
   occasions: {
+    valentinesDay: "Valentine's Day",
+    carnival: 'Carnival',
     womensDay: "International Women's Day",
     easter: 'Easter',
+    sechselaeuten: 'Sechseläuten',
     labourDay: 'Labour Day',
+    mothersDay: "Mother's Day",
+    ascension: 'Ascension Day',
     pentecost: 'Pentecost',
+    solstice: 'Midsummer',
     halloween: 'Halloween',
+    stNicholas: 'St Nicholas Day',
     swissNationalDay: 'Swiss National Day',
     advent: 'Advent',
     christmas: 'Christmas',
@@ -57,13 +71,14 @@ const EN: Texts = {
   unknownModel: 'unknown',
   newYearGreeting: 'Happy New Year!',
   alt: (season, p, model) => `Landscape (${season}), context ${p}% full, model ${model}`,
-  commandDescription: 'Winter landscape: preview seasons, occasions, weather, context and moods',
+  commandDescription: 'Interactive background: preview seasons, occasions, weather, context and moods',
   help: [
-    'Winter landscape preview:',
+    'Interactive background preview (/background or /winter):',
     '  /winter                      show the current state',
     '  /winter <season|occasion>    winter, firstsnow, thaw, spring, summer, autumn,',
-    '                               womensday, easter, labourday, pentecost, nationalday, halloween,',
-    '                               advent, christmas, newyearseve, newyear',
+    '                               valentine, carnival, womensday, easter, sechselaeuten, labourday,',
+    '                               mothersday, ascension, pentecost, midsummer, nationalday, halloween,',
+    '                               stnicholas, advent, christmas, newyearseve, newyear',
     '  /winter date 2027-03-20      any date',
     '  /winter weather clear|sunset|fog|magic',
     '  /winter context 80           simulate how full the context is',
@@ -84,11 +99,18 @@ const EN: Texts = {
 const DE: Texts = {
   seasons: { winter: 'Winter', thaw: 'Tauwetter', firstSnow: 'Erster Schnee', spring: 'Frühling', summer: 'Sommer', autumn: 'Herbst' },
   occasions: {
+    valentinesDay: 'Valentinstag',
+    carnival: 'Fasnacht',
     womensDay: 'Tag der Frau',
     easter: 'Ostern',
+    sechselaeuten: 'Sechseläuten',
     labourDay: 'Tag der Arbeit',
+    mothersDay: 'Muttertag',
+    ascension: 'Auffahrt',
     pentecost: 'Pfingsten',
+    solstice: 'Sommersonnenwende',
     halloween: 'Halloween',
+    stNicholas: 'St. Nikolaus',
     swissNationalDay: '1. August',
     advent: 'Advent',
     christmas: 'Weihnachten',
@@ -101,13 +123,15 @@ const DE: Texts = {
   unknownModel: 'unbekannt',
   newYearGreeting: 'Es guets Neus!',
   alt: (season, p, model) => `Landschaft (${season}), Kontext zu ${p} Prozent gefüllt, Modell ${model}`,
-  commandDescription: 'Winterlandschaft: Vorschau von Jahreszeiten, Anlässen, Wetter, Kontext und Stimmungen',
+  commandDescription: 'Interaktiver Hintergrund: Vorschau von Jahreszeiten, Anlässen, Wetter, Kontext und Stimmungen',
   help: [
-    'Vorschau der Winterlandschaft:',
+    'Vorschau des interaktiven Hintergrunds (/background oder /winter):',
     '  /winter                      zeigt den aktuellen Zustand',
     '  /winter <jahreszeit|anlass>  winter, ersterschnee, tauwetter, frühling, sommer, herbst,',
-    '                               tagderfrau, ostern, tagderarbeit, pfingsten, nationalfeiertag,',
-    '                               halloween, advent, weihnachten, silvester, neujahr',
+    '                               valentinstag, fasnacht, tagderfrau, ostern, sechseläuten,',
+    '                               tagderarbeit, muttertag, auffahrt, pfingsten, sonnenwende,',
+    '                               nationalfeiertag, halloween, nikolaus, advent, weihnachten,',
+    '                               silvester, neujahr',
     '  /winter datum 2027-03-20     beliebiges Datum',
     '  /winter wetter klar|abendrot|nebel|zauber',
     '  /winter kontext 80           Kontext-Füllstand simulieren',

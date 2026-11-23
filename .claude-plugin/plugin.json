@@ -1,7 +1,7 @@
 {
-  "name": "winter-landscape",
-  "version": "0.3.0",
-  "description": "A background for the Claude app: snowfall and a snowman that follow your context, the current model in a top corner, seasons, occasions and moods",
+  "name": "interactive-background",
+  "version": "0.4.0",
+  "description": "An interactive background for the Claude app: seasons, occasions, weather per model, and a figure that follows your context and reacts to your tests",
   "author": {
     "name": "PurpleProgrammer"
   },

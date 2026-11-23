@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-//  WINTER LANDSCAPE SETTINGS
+//  INTERACTIVE BACKGROUND SETTINGS
 //
 //  Change anything here without touching the rest of the code: edit the
 //  values to the right of the colons and save. The scene reloads itself.
@@ -12,6 +12,13 @@
 
 /** Weather types: 'clear', 'sunset', 'fog' or 'magic'. */
 export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
+
+/**
+ * Where you live, for local customs: carnival dates differ between Basel, Bern
+ * and Lucerne (also used for the rest of Switzerland), and Sechseläuten is only
+ * shown in Zurich.
+ */
+export type Location = 'zurich' | 'basel' | 'bern' | 'lucerne' | 'other'
 
 /** Languages of the texts in the scene and of the /winter command: 'en' or 'de'. */
 export type Language = 'en' | 'de'
@@ -30,6 +37,12 @@ export const SETTINGS = {
     offsetX: 24,
     offsetY: 56,
   },
+
+  /** Your town, for carnival dates and Sechseläuten: 'zurich', 'basel', 'bern', 'lucerne' or 'other'. */
+  location: 'other' as Location,
+
+  /** On occasions the figure dresses up, e.g. a witch's hat on Halloween: true = on, false = off. */
+  costumes: true,
 
   /** How many fir trees stand on the right (0 to 8). */
   trees: 3,
@@ -87,11 +100,18 @@ export const SETTINGS = {
 
   /** Which occasions are shown: true = on, false = off. */
   occasions: {
+    valentinesDay: true,
+    carnival: true,
     womensDay: true,
     easter: true,
+    sechselaeuten: true,
     labourDay: true,
+    mothersDay: true,
+    ascension: true,
     pentecost: true,
+    solstice: true,
     halloween: true,
+    stNicholas: true,
     swissNationalDay: true,
     advent: true,
     christmas: true,
