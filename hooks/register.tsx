@@ -95,10 +95,13 @@ function weatherFor(id: string): Weather {
   return 'clear'
 }
 
-/** Today's date in Switzerland, where the occasions are counted. */
-function swissDate(ms: number): DateParts {
+/**
+ * Today's date in the time zone from the settings ('auto': the system's zone,
+ * or the region's home zone on a UTC machine); UTC when that zone is unknown.
+ */
+function localDate(ms: number): DateParts {
   try {
-    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms))
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: region().timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms))
     const [y, m, d] = parts.split('-').map(Number)
     if (y && m && d) {
       return { y, m, d }
@@ -132,7 +135,7 @@ async function refresh($: Session$): Promise<boolean> {
     // Keep the last name.
   }
   try {
-    today = swissDate(await $.clock.now())
+    today = localDate(await $.clock.now())
   } catch {
     // Keep the last date.
   }
