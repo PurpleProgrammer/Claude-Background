@@ -10,8 +10,8 @@
 //  verstehen. Mit language: 'de' erscheinen alle Texte auf Deutsch.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Weather types: 'clear', 'sunset' or 'fog'. */
-export type Weather = 'clear' | 'sunset' | 'fog'
+/** Weather types: 'clear', 'sunset', 'fog' or 'magic'. */
+export type Weather = 'clear' | 'sunset' | 'fog' | 'magic'
 
 /** Languages of the texts in the scene and of the /winter command: 'en' or 'de'. */
 export type Language = 'en' | 'de'
@@ -19,6 +19,17 @@ export type Language = 'en' | 'de'
 export const SETTINGS = {
   /** Language of the label in the scene and the /winter replies. */
   language: 'en' as Language,
+
+  /**
+   * Where the model and context label sits: 'top-right' or 'top-left', and how
+   * far from the window's edges, in pixels. Raise offsetY if the app's title bar
+   * covers it.
+   */
+  label: {
+    position: 'top-right' as 'top-right' | 'top-left',
+    offsetX: 24,
+    offsetY: 56,
+  },
 
   /** How many fir trees stand on the right (0 to 8). */
   trees: 3,
@@ -57,6 +68,7 @@ export const SETTINGS = {
     opus: 'clear',
     sonnet: 'sunset',
     haiku: 'fog',
+    fable: 'magic',
   } as Record<string, Weather>,
 
   /** How long the click effects (flurry, smiling moon) last, in seconds. */
@@ -75,7 +87,11 @@ export const SETTINGS = {
 
   /** Which occasions are shown: true = on, false = off. */
   occasions: {
+    womensDay: true,
     easter: true,
+    labourDay: true,
+    pentecost: true,
+    halloween: true,
     swissNationalDay: true,
     advent: true,
     christmas: true,

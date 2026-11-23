@@ -159,6 +159,18 @@ export function occasionOn(date: DateParts): Occasion | undefined {
   if (on.easter && today >= easter - 2 && today <= easter + 1) {
     return 'easter'
   }
+  if (on.pentecost && today >= easter + 49 && today <= easter + 50) {
+    return 'pentecost'
+  }
+  if (on.womensDay && m === 3 && d === 8) {
+    return 'womensDay'
+  }
+  if (on.labourDay && m === 5 && d === 1) {
+    return 'labourDay'
+  }
+  if (on.halloween && m === 10 && d >= 30) {
+    return 'halloween'
+  }
   if (on.swissNationalDay && ((m === 7 && d === 31) || (m === 8 && d === 1))) {
     return 'swissNationalDay'
   }
@@ -204,6 +216,7 @@ const SKY: Record<Weather, { light: [string, string, string]; dark: [string, str
   clear: { light: ['#9fc6e8', '#c7def1', '#eef5fb'], dark: ['#070f1c', '#13233c', '#23395a'] },
   sunset: { light: ['#6f82bd', '#f0a384', '#fbd9a8'], dark: ['#140b26', '#3a1f48', '#6a3558'] },
   fog: { light: ['#bfc8d1', '#d6dde3', '#e9edf0'], dark: ['#171c23', '#262e38', '#3a444f'] },
+  magic: { light: ['#a993e0', '#e2c6f0', '#fde8f2'], dark: ['#0f0826', '#2a1452', '#4d2a72'] },
 }
 
 // ── pieces of the scene ───────────────────────────────────────────────────
@@ -279,7 +292,7 @@ function celestial(clicked: boolean): string {
         <circle cx="-27" cy="8" r="6" class="cheek"/><circle cx="27" cy="8" r="6" class="cheek"/>
       </g>`
     : ''
-  return `<g transform="translate(1330 170)">
+  return `<g transform="translate(1150 200)">
     <g class="sun"><circle r="58" class="halo"/><circle r="44" class="disc"/>${face}</g>
     <g class="moon"><circle r="46" class="disc"/><circle cx="-14" cy="12" r="7" class="crater"/><circle cx="16" cy="-14" r="5" class="crater"/>${face}</g>
   </g>`
@@ -565,6 +578,87 @@ function presents(): string {
   </g>`
 }
 
+/** Fable's weather: slowly twinkling sparkles and a shooting star now and then. */
+function magicSky(rand: () => number): string {
+  let out = ''
+  for (let i = 0; i < 36; i++) {
+    const x = Math.round(rand() * 1600)
+    const y = Math.round(rand() * 560)
+    const r = (5 + rand() * 7).toFixed(1)
+    out += `<path class="spark" d="${starPath(x, y, Number(r), Number(r) * 0.28).replace(/(\d+\.\d)\d*/g, '$1')}" style="animation-delay:${(-rand() * 5).toFixed(1)}s"/>`
+  }
+  out += `<g class="shoot"><path d="M0 0 L-140 -46" class="trail"/><circle r="3.5" class="head"/></g>`
+  return `<g class="magic">${out}</g>`
+}
+
+function womensDayDecor(): string {
+  // Mimosa, the flower of the day, and a violet bunting.
+  let bunting = ''
+  for (let i = 0; i < 10; i++) {
+    const x = 330 + i * 62
+    const y = 110 + Math.round(Math.sin((i / 9) * Math.PI) * 46)
+    bunting += `<path d="M${x - 16} ${y} L${x + 16} ${y} L${x} ${y + 34} Z" fill="${i % 2 === 0 ? '#7b3fa0' : '#b07ad0'}"/>`
+  }
+  let mimosa = ''
+  const rand = seeded(8)
+  for (let b = 0; b < 2; b++) {
+    const bx = 860 + b * 230
+    mimosa += `<path d="M${bx} 930 Q${bx + 10} 870 ${bx - 30} 820 M${bx + 4} 890 Q${bx + 50} 860 ${bx + 70} 820 M${bx + 2} 900 Q${bx - 50} 880 ${bx - 80} 860" stroke="#5a7d3a" stroke-width="5" fill="none"/>`
+    for (let k = 0; k < 26; k++) {
+      const x = bx - 85 + rand() * 160
+      const y = 815 + rand() * 75
+      mimosa += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(6 + rand() * 4).toFixed(1)}" fill="${k % 3 === 0 ? '#ffe14d' : '#ffd21f'}"/>`
+    }
+  }
+  return `<path d="M300 92 Q620 180 940 92" stroke="#6b4f80" stroke-width="2" fill="none"/>${bunting}${mimosa}`
+}
+
+function labourDayDecor(): string {
+  // A maypole with a wreath and ribbons swaying in the wind.
+  const colors = ['#d52b1e', '#ffd54a', '#2f6a9a', '#3f7d55', '#ffffff', '#f49ab5']
+  let ribbons = ''
+  colors.forEach((c, i) => {
+    const dx = (i - 2.5) * 22
+    ribbons += `<path class="ribbon" d="M0 -300 Q${dx * 1.2} -200 ${dx * 2.4} -110" stroke="${c}" stroke-width="5" fill="none" style="animation-delay:${(i * 0.5).toFixed(1)}s"/>`
+  })
+  return `<g transform="translate(860 590)">
+    <rect x="-5" y="-320" width="10" height="320" fill="#c9a35a"/>
+    <path d="M-5 -280 L5 -270 M-5 -240 L5 -230 M-5 -200 L5 -190 M-5 -160 L5 -150 M-5 -120 L5 -110 M-5 -80 L5 -70" stroke="#8a5a2b" stroke-width="3"/>
+    ${ribbons}
+    <ellipse cx="0" cy="-300" rx="40" ry="12" fill="none" stroke="#3f7d3a" stroke-width="9"/>
+    <circle cx="-30" cy="-302" r="5" fill="#ff6b6b"/><circle cx="0" cy="-289" r="5" fill="#ffd54a"/><circle cx="28" cy="-303" r="5" fill="#ffffff"/>
+    <path d="M0 -320 L0 -352" stroke="#3f7d3a" stroke-width="6"/><circle cx="0" cy="-356" r="9" fill="#3f7d3a"/>
+  </g>`
+}
+
+function pentecostDecor(): { sky: string; ground: string } {
+  // A white dove gliding across the sky, and peonies in front.
+  const dove = `<g class="dove"><g class="flap">
+    <ellipse cx="0" cy="0" rx="30" ry="12" fill="#ffffff"/>
+    <circle cx="28" cy="-6" r="9" fill="#ffffff"/><path d="M36 -6 L46 -3 L36 -1 Z" fill="#e0a800"/>
+    <path d="M-30 -2 L-52 -12 L-50 6 Z" fill="#ffffff"/>
+    <path class="wing" d="M-6 -4 Q-2 -44 22 -50 Q12 -22 10 -2 Z" fill="#f2f2f2"/>
+  </g></g>`
+  const peony = (x: number, y: number, c: string): string =>
+    `<g transform="translate(${x} ${y})"><path d="M0 0 L0 40" stroke="#3f7d3a" stroke-width="4"/>
+      <circle r="18" fill="${c}"/><circle cx="-10" cy="-6" r="11" fill="${c}"/><circle cx="10" cy="-6" r="11" fill="${c}"/><circle cy="-12" r="10" fill="${c}"/>
+      <circle r="8" fill="#ffffff" opacity="0.35"/></g>`
+  return { sky: dove, ground: `${peony(540, 880, '#f06fa0')}${peony(640, 900, '#f7a8c6')}${peony(1040, 885, '#e0457e')}${peony(1130, 905, '#f7a8c6')}` }
+}
+
+function halloweenDecor(): string {
+  // Jack-o'-lanterns in front and bats gliding across the sky.
+  const pumpkin = (x: number, y: number, size: number): string =>
+    `<g transform="translate(${x} ${y}) scale(${size})">
+      <ellipse cx="-16" cy="0" rx="22" ry="28" fill="#e8730c"/><ellipse cx="16" cy="0" rx="22" ry="28" fill="#e8730c"/><ellipse cx="0" cy="0" rx="22" ry="30" fill="#f08a1c"/>
+      <path d="M0 -28 Q4 -40 12 -44" stroke="#4a6b2a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path class="glow" d="M-20 -8 L-10 -18 L-4 -6 Z M20 -8 L10 -18 L4 -6 Z M-22 8 L-14 14 L-6 8 L0 16 L6 8 L14 14 L22 8 Q0 30 -22 8 Z"/>
+    </g>`
+  const bat = (i: number): string =>
+    `<g class="bat" style="animation-delay:${(-i * 6.5).toFixed(1)}s"><g transform="translate(0 ${120 + i * 70})"><path class="batwing" d="M0 0 Q-10 -12 -26 -8 Q-18 -2 -22 6 Q-10 2 0 6 Q10 2 22 6 Q18 -2 26 -8 Q10 -12 0 0 Z" fill="#1f1a26"/></g></g>`
+  return `${[0, 1, 2, 3].map(bat).join('')}${pumpkin(560, 890, 1.2)}${pumpkin(660, 915, 0.9)}${pumpkin(1060, 900, 1.1)}`
+}
+
 // ── the whole scene ──────────────────────────────────────────────────────
 
 export function buildScene(input: SceneInput): string {
@@ -588,7 +682,18 @@ export function buildScene(input: SceneInput): string {
 
   let extras = ''
   let sky2 = ''
+  const magic = input.weather === 'magic' ? magicSky(seeded(31)) : ''
   if (y.occasion === 'easter') extras += easterDecor()
+  if (y.occasion === 'womensDay') extras += womensDayDecor()
+  if (y.occasion === 'labourDay') extras += labourDayDecor()
+  if (y.occasion === 'pentecost') {
+    const p2 = pentecostDecor()
+    sky2 += p2.sky
+    extras += p2.ground
+  }
+  if (y.occasion === 'halloween') {
+    extras += halloweenDecor()
+  }
   if (y.occasion === 'swissNationalDay') {
     extras += swissDay()
     sky2 += fireworks(['#d52b1e', '#ffffff', '#ff6b6b'], seeded(3))
@@ -602,6 +707,11 @@ export function buildScene(input: SceneInput): string {
 
   const label = escapeXml(input.modelLabel || t().loadingModel)
   const sub = escapeXml(`${t().contextShare(Math.round(p))} · ${y.occasion ? t().occasions[y.occasion] : t().seasons[y.season]}`)
+  // The label is drawn in screen pixels, so it keeps its size and corner on any window.
+  const pillW = Math.round(Math.max(200, 40 + Math.max(label.length * 12.5, sub.length * 7.6)))
+  const right = CFG.label.position !== 'top-left'
+  const pillX = right ? -CFG.label.offsetX - pillW : CFG.label.offsetX
+  const pillY = CFG.label.offsetY
 
   const fog =
     input.weather === 'fog'
@@ -612,7 +722,7 @@ export function buildScene(input: SceneInput): string {
       ? `<g class="aurora"><path d="M-200 200 C 100 90 600 260 900 140 C 1150 50 1500 210 1800 120 L1800 230 C 1500 310 1150 150 900 240 C 600 360 100 190 -200 300 Z"/></g>`
       : ''
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
 <style>
   .sky0 { stop-color: ${sky.light[0]}; } .sky1 { stop-color: ${sky.light[1]}; } .sky2 { stop-color: ${sky.light[2]}; }
   .far { fill: ${gl.far}; } .near { fill: ${gl.near}; } .ground { fill: ${gl.ground}; }
@@ -654,6 +764,17 @@ export function buildScene(input: SceneInput): string {
   .hatpop { animation: hatpop 1.2s ease-out 1; }
   .confetti { animation: confetti 2.4s ease-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
   .bang { animation: fadein 0.3s ease-out both; }
+  .skytop { fill: ${sky.light[0]}; }
+  .spark { fill: #fff6c8; opacity: 0.3; animation: twinkle 5s ease-in-out infinite; }
+  .shoot { opacity: 0; animation: shoot 11s linear infinite; }
+  .trail { stroke: #ffffff; stroke-width: 2.5; stroke-linecap: round; opacity: 0.8; }
+  .head { fill: #ffffff; }
+  .ribbon { animation: sway 5s ease-in-out infinite; transform-box: view-box; transform-origin: 0px -300px; }
+  .dove { animation: dove 26s linear infinite; }
+  .flap .wing { animation: flap 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 20% 100%; }
+  .bat { animation: bat 26s linear infinite; }
+  .batwing { animation: flap 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 60%; }
+  .glow { fill: #5a2a00; }
   .greet { font-family: sans-serif; font-size: 44px; font-weight: 700; fill: #c0392b; }
   .lbl { font-family: sans-serif; font-size: 22px; font-weight: 600; fill: #16324a; }
   .sub { font-family: sans-serif; font-size: 15px; fill: #3a5670; }
@@ -681,6 +802,11 @@ export function buildScene(input: SceneInput): string {
   @keyframes jolt { 0% { transform: translate(0px, 0px); } 12% { transform: translate(0px, -34px); } 24% { transform: translate(0px, 0px); } 36% { transform: translate(-6px, 0px); } 48% { transform: translate(6px, 0px); } 60% { transform: translate(-4px, 0px); } 72% { transform: translate(4px, 0px); } 100% { transform: translate(0px, 0px); } }
   @keyframes hatpop { 0% { transform: translate(0px, 0px); } 18% { transform: translate(0px, -40px); } 40% { transform: translate(0px, -12px); } 100% { transform: translate(0px, -12px); } }
   @keyframes confetti { 0% { transform: translate(0px, 0px) rotate(0deg); opacity: 1; } 100% { transform: translate(0px, 60px) rotate(300deg); opacity: 0.2; } }
+  @keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  @keyframes shoot { 0% { opacity: 0; transform: translate(300px, 80px); } 4% { opacity: 1; } 12% { opacity: 0; transform: translate(760px, 230px); } 100% { opacity: 0; transform: translate(760px, 230px); } }
+  @keyframes dove { from { transform: translate(-120px, 260px); } 50% { transform: translate(800px, 180px); } to { transform: translate(1750px, 240px); } }
+  @keyframes bat { from { transform: translate(-80px, 0px); } 25% { transform: translate(400px, 40px); } 50% { transform: translate(800px, -20px); } 75% { transform: translate(1200px, 30px); } to { transform: translate(1700px, 0px); } }
+  @keyframes flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.35); } }
   @keyframes drift { from { transform: translate(-120px, 0px); } to { transform: translate(120px, 0px); } }
   @media (prefers-color-scheme: dark) {
     .sky0 { stop-color: ${sky.dark[0]}; } .sky1 { stop-color: ${sky.dark[1]}; } .sky2 { stop-color: ${sky.dark[2]}; }
@@ -697,6 +823,9 @@ export function buildScene(input: SceneInput): string {
     .aurora path { opacity: 0.45; animation: drift 40s ease-in-out infinite alternate; }
     .wing { stroke: #c9d8e8; }
     .greet { fill: #ffd54a; }
+    .skytop { fill: ${sky.dark[0]}; }
+    .glow { fill: #ffcf4a; }
+    .spark { fill: #fff3a0; }
     .lbl { fill: #eaf1f8; } .sub { fill: #b8c8da; }
     .pill { fill: #0f1724; opacity: 0.7; }
   }
@@ -708,10 +837,13 @@ export function buildScene(input: SceneInput): string {
     <stop offset="0" class="sky0"/><stop offset="0.55" class="sky1"/><stop offset="1" class="sky2"/>
   </linearGradient>
 </defs>
-<!-- sky -->
+<!-- landscape, filling the window -->
+<svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+<rect x="-2000" y="-2000" width="5600" height="5000" class="skytop"/>
 <rect width="1600" height="1000" fill="url(#sky)"/>
 ${stars(seeded(11))}
 ${aurora}
+${magic}
 <g ${input.weather === 'fog' ? 'opacity="0.45"' : ''}>${celestial(clicked)}</g>
 ${sky2}
 ${greeting}
@@ -722,18 +854,21 @@ ${pines(y, y.occasion, clicked, seeded(21))}
 <path class="ground" d="M0 840 C 300 815 700 835 1000 822 C 1250 812 1450 830 1600 825 L1600 1000 L0 1000 Z"/>
 ${fog}
 ${extras}
+</svg>
 <!-- figure, pinned bottom left -->
-<svg x="0" y="0" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMinYMax meet">
+<svg width="100%" height="100%" viewBox="0 0 700 1000" preserveAspectRatio="xMinYMax meet">
   <g transform="translate(290 860) scale(${scale})"><g class="${input.mood === 'cheer' ? 'hop' : input.mood === 'fright' ? 'jolt' : ''}">${figure}</g></g>
 </svg>
-<!-- falling things -->
+<!-- falling things, in front of the figure -->
+<svg width="100%" height="100%" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
 <g>${particles(y, p, rand)}</g>
 ${input.click ? `<g>${gust(y, input.click, seeded(input.click.seq + 101))}</g>` : ''}
-<!-- label, pinned top left -->
-<svg x="0" y="0" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMinYMin meet">
-  <rect class="pill" x="24" y="24" width="330" height="72" rx="16"/>
-  <text class="lbl" x="44" y="58">${label}</text>
-  <text class="sub" x="44" y="82">${sub}</text>
+</svg>
+<!-- label, pinned to a top corner in screen pixels -->
+<svg x="${right ? '100%' : '0'}" y="0" width="1" height="1" overflow="visible">
+  <rect class="pill" x="${pillX}" y="${pillY}" width="${pillW}" height="72" rx="16"/>
+  <text class="lbl" x="${pillX + 20}" y="${pillY + 34}">${label}</text>
+  <text class="sub" x="${pillX + 20}" y="${pillY + 58}">${sub}</text>
 </svg>
 </svg>`
 }

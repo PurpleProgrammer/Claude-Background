@@ -149,14 +149,31 @@ alias(['thaw', 'tauwetter', 'schmelze'], y => ({ y: y + 1, m: 3, d: 16 }))
 alias(['spring', 'frühling', 'fruehling'], y => ({ y: y + 1, m: 4, d: 25 }))
 alias(['summer', 'sommer'], y => ({ y: y + 1, m: 7, d: 15 }))
 alias(['autumn', 'fall', 'herbst'], y => ({ y: y + 1, m: 10, d: 20 }))
+alias(['womensday', 'tagderfrau', 'frauentag'], y => ({ y: y + 1, m: 3, d: 8 }))
 alias(['easter', 'ostern'], y => easterSunday(y + 1))
+alias(['labourday', 'laborday', 'mayday', 'tagderarbeit'], y => ({ y: y + 1, m: 5, d: 1 }))
+alias(['pentecost', 'whitsun', 'pfingsten'], y => {
+  const e = easterSunday(y + 1)
+  const p = new Date(Date.UTC(e.y, e.m - 1, e.d + 49))
+  return { y: p.getUTCFullYear(), m: p.getUTCMonth() + 1, d: p.getUTCDate() }
+})
+alias(['halloween'], y => ({ y: y + 1, m: 10, d: 31 }))
 alias(['nationalday', 'swissnationalday', 'august1', 'nationalfeiertag'], y => ({ y: y + 1, m: 8, d: 1 }))
 alias(['advent'], y => ({ y, m: 12, d: 6 }))
 alias(['christmas', 'weihnachten'], y => ({ y, m: 12, d: 24 }))
 alias(['newyearseve', 'silvester'], y => ({ y, m: 12, d: 31 }))
 alias(['newyear', 'neujahr'], y => ({ y: y + 1, m: 1, d: 1 }))
 
-const WEATHER_WORDS: Record<string, Weather> = { clear: 'clear', klar: 'clear', sunset: 'sunset', abendrot: 'sunset', fog: 'fog', nebel: 'fog' }
+const WEATHER_WORDS: Record<string, Weather> = {
+  clear: 'clear',
+  klar: 'clear',
+  sunset: 'sunset',
+  abendrot: 'sunset',
+  fog: 'fog',
+  nebel: 'fog',
+  magic: 'magic',
+  zauber: 'magic',
+}
 const MOOD_WORDS: Record<string, Mood> = { cheer: 'cheer', jubel: 'cheer', fright: 'fright', schreck: 'fright' }
 
 type Clock$ = { clock: { after: (ms: number, fn: () => void) => unknown }; ui: { invalidate: (event: 'ui.render') => void } }

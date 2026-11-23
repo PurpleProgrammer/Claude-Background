@@ -16,6 +16,15 @@ test('the backdrop draws the scene and /winter previews an occasion', async $ =>
   await ui.unmount()
 })
 
+test('new occasions and Fable weather can be previewed', async $ => {
+  const run = (args: string) => $.command.run({ command: 'winter', args } as Parameters<typeof $.command.run>[0])
+  expect(JSON.stringify(await run('halloween'))).toContain('Halloween')
+  expect(JSON.stringify(await run('pentecost'))).toContain('Pentecost')
+  expect(JSON.stringify(await run('labourday'))).toContain('Labour Day')
+  expect(JSON.stringify(await run('womensday'))).toContain("Women's Day")
+  expect(JSON.stringify(await run('weather magic'))).toContain('magic')
+})
+
 test('German words work too', async $ => {
   const out = await $.command.run({ command: 'winter', args: 'ostern' } as Parameters<typeof $.command.run>[0])
   expect(JSON.stringify(out)).toContain('Easter')

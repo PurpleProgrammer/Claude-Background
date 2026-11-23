@@ -3,7 +3,17 @@
 import { SETTINGS, type Language, type Weather } from './settings.js'
 
 export type Season = 'winter' | 'thaw' | 'firstSnow' | 'spring' | 'summer' | 'autumn'
-export type Occasion = 'easter' | 'swissNationalDay' | 'advent' | 'christmas' | 'newYearsEve' | 'newYear'
+export type Occasion =
+  | 'womensDay'
+  | 'easter'
+  | 'labourDay'
+  | 'pentecost'
+  | 'swissNationalDay'
+  | 'halloween'
+  | 'advent'
+  | 'christmas'
+  | 'newYearsEve'
+  | 'newYear'
 
 type Texts = {
   seasons: Record<Season, string>
@@ -30,14 +40,18 @@ type Texts = {
 const EN: Texts = {
   seasons: { winter: 'Winter', thaw: 'Thaw', firstSnow: 'First snow', spring: 'Spring', summer: 'Summer', autumn: 'Autumn' },
   occasions: {
+    womensDay: "International Women's Day",
     easter: 'Easter',
+    labourDay: 'Labour Day',
+    pentecost: 'Pentecost',
+    halloween: 'Halloween',
     swissNationalDay: 'Swiss National Day',
     advent: 'Advent',
     christmas: 'Christmas',
     newYearsEve: "New Year's Eve",
     newYear: 'New Year',
   },
-  weather: { clear: 'clear', sunset: 'sunset', fog: 'fog' },
+  weather: { clear: 'clear', sunset: 'sunset', fog: 'fog', magic: 'magic' },
   contextShare: p => `${p}% context`,
   loadingModel: 'Loading model',
   unknownModel: 'unknown',
@@ -48,9 +62,10 @@ const EN: Texts = {
     'Winter landscape preview:',
     '  /winter                      show the current state',
     '  /winter <season|occasion>    winter, firstsnow, thaw, spring, summer, autumn,',
-    '                               easter, nationalday, advent, christmas, newyearseve, newyear',
+    '                               womensday, easter, labourday, pentecost, nationalday, halloween,',
+    '                               advent, christmas, newyearseve, newyear',
     '  /winter date 2027-03-20      any date',
-    '  /winter weather clear|sunset|fog',
+    '  /winter weather clear|sunset|fog|magic',
     '  /winter context 80           simulate how full the context is',
     '  /winter cheer | fright       let the figure cheer or get a fright',
     '  /winter reset                end all previews',
@@ -69,14 +84,18 @@ const EN: Texts = {
 const DE: Texts = {
   seasons: { winter: 'Winter', thaw: 'Tauwetter', firstSnow: 'Erster Schnee', spring: 'Frühling', summer: 'Sommer', autumn: 'Herbst' },
   occasions: {
+    womensDay: 'Tag der Frau',
     easter: 'Ostern',
+    labourDay: 'Tag der Arbeit',
+    pentecost: 'Pfingsten',
+    halloween: 'Halloween',
     swissNationalDay: '1. August',
     advent: 'Advent',
     christmas: 'Weihnachten',
     newYearsEve: 'Silvester',
     newYear: 'Neujahr',
   },
-  weather: { clear: 'klar', sunset: 'Abendrot', fog: 'Nebel' },
+  weather: { clear: 'klar', sunset: 'Abendrot', fog: 'Nebel', magic: 'Zauber' },
   contextShare: p => `${p} % Kontext`,
   loadingModel: 'Modell wird geladen',
   unknownModel: 'unbekannt',
@@ -87,9 +106,10 @@ const DE: Texts = {
     'Vorschau der Winterlandschaft:',
     '  /winter                      zeigt den aktuellen Zustand',
     '  /winter <jahreszeit|anlass>  winter, ersterschnee, tauwetter, frühling, sommer, herbst,',
-    '                               ostern, nationalfeiertag, advent, weihnachten, silvester, neujahr',
+    '                               tagderfrau, ostern, tagderarbeit, pfingsten, nationalfeiertag,',
+    '                               halloween, advent, weihnachten, silvester, neujahr',
     '  /winter datum 2027-03-20     beliebiges Datum',
-    '  /winter wetter klar|abendrot|nebel',
+    '  /winter wetter klar|abendrot|nebel|zauber',
     '  /winter kontext 80           Kontext-Füllstand simulieren',
     '  /winter jubel | schreck      Figur jubeln oder erschrecken lassen',
     '  /winter zurück               alle Vorschauen beenden',
