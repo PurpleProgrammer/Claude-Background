@@ -468,12 +468,13 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
     if (unpainted !== undefined) {
-      $.ui.log(unpainted)
+      $.ui.log(unpainted, { to: 'debug' })
     }
     await refresh($)
     const set = await $.theme.set(LOOK)
+    // Where no app draws themes (the terminal, or before one attaches), say so in the debug log only.
     if (!set.isDrawn) {
-      $.ui.status(set.reason)
+      $.ui.log(`interactive-background: ${set.reason}`, { to: 'debug' })
     }
     try {
       const stored = await $.store.get('fallingMode')
@@ -505,7 +506,7 @@ export const register: Register = on => {
       try {
         await $.command.register({ name, description: t().commandDescription })
       } catch (error) {
-        $.ui.log(`interactive-background: /${name} could not be registered: ${String(error)}`)
+        $.ui.log(`interactive-background: /${name} could not be registered: ${String(error)}`, { to: 'debug' })
       }
     }
     stir($)

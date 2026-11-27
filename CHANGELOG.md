@@ -2,6 +2,10 @@
 
 All notable changes to Interactive Background for Claude.
 
+## 1.1.1
+
+- Technical notices (no app drawing themes yet, a command name already taken) go to the debug log instead of the status line and the chat
+
 ## 1.1.0
 
 - A second landscape, the Alps: `/backdrop landscape mountains` (or `landscape: 'mountains'` in the settings)
